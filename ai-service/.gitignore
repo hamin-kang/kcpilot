@@ -1,0 +1,23 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# 환경변수
+.env
+
+# FAISS 인덱스
+data/vectorstore/
+
+# 원본 PDF (용량 큼)
+data/raw/
+
+# pytest 캐시
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+
+# misc
+.DS_Store
