@@ -1,4 +1,4 @@
-# git convention & Branch Strategy
+# Git Convention & Branch Strategy
 
 ## Git Convention
 
