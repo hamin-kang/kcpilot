@@ -6,7 +6,8 @@
 
 - **Spring Boot 3.5.14** + **Java 21** (toolchain으로 강제)
 - **Gradle Kotlin DSL** (`build.gradle.kts`)
-- **JPA + Hibernate** (MySQL 8 dialect)
+- **JPA + Hibernate** (PostgreSQL dialect)
+- **PostgreSQL 18** + **pgvector 0.8.2** (벡터 검색은 ai-service에서 주도, backend는 RDBMS 접근만 담당)
 - **Spring Security**
 - **Spring Validation**
 - **Lombok** (annotation processor)
@@ -23,9 +24,9 @@
 
 ## 사전 조건
 
-backend 실행 전 **MySQL이 떠 있어야 한다**. 루트에서 `docker-compose up -d` 먼저 실행.
+backend 실행 전 **PostgreSQL이 떠 있어야 한다**. 루트에서 `docker-compose up -d` 먼저 실행 (pgvector 확장은 init 스크립트로 자동 활성화됨).
 
-`application.yaml`의 datasource 자격증명(`hamin`/`1234`)은 `docker-compose.yml`의 환경변수와 일치해야 한다. 둘 중 하나라도 바꾸면 같이 수정할 것.
+`application.yaml`의 datasource 자격증명(`hamin`/`1234`, 포트 5432)은 `docker-compose.yaml`의 환경변수와 일치해야 한다. 둘 중 하나라도 바꾸면 같이 수정할 것.
 
 ## 개발 명령어
 
