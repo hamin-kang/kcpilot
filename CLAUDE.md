@@ -6,26 +6,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 KCpilot은 KC 인증 사전진단 AI 서비스로, 3개 서비스로 구성된 모노레포다.
 
-- **backend/** — Spring Boot 3.5.14 (Java 21), MySQL, JPA, Spring Security, springdoc-openapi
+- **backend/** — Spring Boot 3.5.14 (Java 21), PostgreSQL, JPA, Spring Security, springdoc-openapi
 - **frontend/** — Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, Jest
-- **ai-service/** — FastAPI, Python 3.11, LangChain/LangGraph, OpenAI
+- **ai-service/** — FastAPI, Python 3.11, LangChain/LangGraph, OpenAI, pgvector
 
 ## 서비스 간 관계
 
-- `frontend` (Next.js) → `backend` (Spring Boot, 8080) → MySQL
+- `frontend` (Next.js) → `backend` (Spring Boot, 8080) → PostgreSQL
 - `backend` → `ai-service` (FastAPI): KC 인증 사전진단 워크플로우 실행 위임
+- `ai-service` → PostgreSQL (pgvector): RAG용 임베딩·법령 텍스트 검색 (관계형 DB와 동일 인스턴스 공유)
 - `ai-service`는 LangGraph 기반 워크플로우 (`main.py`의 `/ai/run-assessment` 엔드포인트, 아직 미구현)
 
 ## 인프라
 
-MySQL은 docker-compose로 띄운다. backend 실행 전 필수.
+PostgreSQL(pgvector 확장 포함)은 docker-compose로 띄운다. backend·ai-service 실행 전 필수.
 
 ```bash
-docker-compose up -d        # MySQL 8.0 (포트 3306, DB: kcpilot)
+docker-compose up -d        # PostgreSQL 18 + pgvector 0.8.2 (포트 5432, DB: kcpilot)
 docker-compose down
 ```
 
-`application.yaml`의 datasource 자격증명(`hamin`/`1234`)은 `docker-compose.yml` 환경변수와 일치해야 한다.
+이미지는 `pgvector/pgvector:0.8.2-pg18`을 사용한다 (PG·pgvector 둘 다 핀 박음). `infra/postgres/init/01-init.sql`이 컨테이너 첫 부팅 시 자동 실행되어 `CREATE EXTENSION vector`가 적용된다. (재실행이 필요하면 `docker-compose down -v`로 볼륨까지 제거 후 다시 `up -d`.)
+
+`application.yaml`의 datasource 자격증명(`hamin`/`1234`)은 `docker-compose.yaml` 환경변수와 일치해야 한다.
 
 ## 자주 쓰는 명령어
 

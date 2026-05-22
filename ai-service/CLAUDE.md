@@ -9,9 +9,11 @@
 - **LangChain 1.3** / **LangGraph 1.2** / **langchain-openai** 1.2
 - **OpenAI** SDK 2.37
 - **PDF 처리**: pdfminer.six, pdfplumber, pypdfium2, pillow
-- **벡터 검색**: faiss-cpu
+- **벡터 검색**: PostgreSQL + **pgvector** (LangChain의 `langchain-postgres` PGVector 래퍼 사용, DB 접속은 `psycopg[binary]`)
 - **토큰 계산**: tiktoken
 - **pytest** (테스트)
+
+벡터 저장소는 backend가 쓰는 PostgreSQL과 **동일 인스턴스를 공유**한다 (포트 5432, DB `kcpilot`). 컨테이너는 루트 `docker-compose.yaml`로 띄운다.
 
 ## 가상환경
 
@@ -32,10 +34,11 @@ pip freeze > requirements.txt                   # requirements.txt 갱신
 
 ## 환경변수 (.env)
 
-`main.py`가 `load_dotenv()`를 호출해 `.env`에서 환경변수를 읽는다. **현재 `.env` 파일은 비어 있다**. OpenAI 호출이 필요한 코드를 추가하려면 `OPENAI_API_KEY`를 먼저 설정해야 한다.
+`main.py`가 `load_dotenv()`를 호출해 `.env`에서 환경변수를 읽는다. **현재 `.env` 파일은 비어 있다**. OpenAI 호출이 필요한 코드를 추가하려면 `OPENAI_API_KEY`를, pgvector 접속에는 `DATABASE_URL`을 먼저 설정해야 한다.
 
 ```env
 OPENAI_API_KEY=sk-...
+DATABASE_URL=postgresql+psycopg://hamin:1234@localhost:5432/kcpilot
 ```
 
 `.env`는 절대 커밋하지 말 것 (`.gitignore` 확인 필요).
