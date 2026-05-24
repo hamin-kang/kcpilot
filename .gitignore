@@ -4,3 +4,6 @@
 # IDE
 .idea/
 .vscode/
+
+# 환경변수
+.env
