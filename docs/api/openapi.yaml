@@ -238,7 +238,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AssessmentSummary'
               example:
-                assessmentId: 100
+                assessmentId: V1StGXR82aBc
                 productName: 헤어드라이어
                 status: PENDING
                 createdAt: '2026-05-22T10:30:00Z'
@@ -285,16 +285,14 @@ paths:
                 $ref: '#/components/schemas/AssessmentSummaryPage'
               example:
                 items:
-                  - assessmentId: 100
+                  - assessmentId: V1StGXR82aBc
                     productName: 헤어드라이어
                     status: COMPLETED
-                    confidence: HIGH
                     createdAt: '2026-05-22T10:30:00Z'
                     completedAt: '2026-05-22T10:30:45Z'
-                  - assessmentId: 99
+                  - assessmentId: E5F6G7H8jKlM
                     productName: 스마트 학습 인형
                     status: COMPLETED
-                    confidence: HIGH
                     createdAt: '2026-05-21T15:10:00Z'
                     completedAt: '2026-05-21T15:10:52Z'
                 pageInfo:
@@ -329,7 +327,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AssessmentDetail'
               example:
-                assessmentId: 100
+                assessmentId: V1StGXR82aBc
                 productName: 헤어드라이어
                 productPurpose: 가정용 모발 건조
                 usesElectricity: true
@@ -337,7 +335,6 @@ paths:
                 specifications: '220V 1200W, 정격 시간 10분'
                 specSheetFileId: 42
                 status: COMPLETED
-                confidence: HIGH
                 createdAt: '2026-05-22T10:30:00Z'
                 completedAt: '2026-05-22T10:30:45Z'
                 result:
@@ -347,11 +344,13 @@ paths:
                       name: 안전확인
                       description: 위해 우려가 있는 제품 (제품시험만)
                       authority: 산업통상자원부/KATS
+                      confidence: HIGH
                     - axis: EMC
                       type: EMC_REGISTRATION
                       name: 적합등록
                       description: 위해 우려 중간 기자재
                       authority: 과학기술정보통신부/국립전파연구원
+                      confidence: MEDIUM
                   applicableCategories: [ELECTRICAL_APPLIANCE]
                   testItems:
                     - itemCode: SAF-001
@@ -405,7 +404,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ReasoningLog'
               example:
-                assessmentId: 100
+                assessmentId: V1StGXR82aBc
                 steps:
                   - stepNumber: 1
                     stepName: CATEGORY_CLASSIFICATION
@@ -528,11 +527,11 @@ components:
       name: assessmentId
       in: path
       required: true
-      description: 진단 ID
+      description: 진단 ID (NanoID 12자)
       schema:
-        type: integer
-        format: int64
-        minimum: 1
+        type: string
+        minLength: 12
+        maxLength: 12
     PageParam:
       name: page
       in: query
@@ -822,6 +821,14 @@ components:
       type: string
       enum: [HIGH, MEDIUM, LOW]
       description: |
+        인증별 신뢰도 라벨. **각 ApplicableCertification에 부여**되며 진단(assessment) 단위에는 부여하지 않는다.
+
+        산출 로직 (requirements.md §4.2.1):
+        * `confidenceScore = MIN(ragSimilarityScore, llmSelfCritiqueScore)` (각각 0.0~1.0)
+        * 임계값: `>= 0.85 → HIGH`, `>= 0.65 → MEDIUM`, 그 외 `LOW`
+        * 백분율 점수는 DB에만 저장하고 응답에는 라벨만 노출 (거짓 정밀성 회피)
+
+        의미:
         * `HIGH` — 명확한 법령 근거 존재
         * `MEDIUM` — 일부 모호하지만 답변 제공
         * `LOW` — 모호함 표시, 전문기관 문의 안내
@@ -906,14 +913,11 @@ components:
       required: [assessmentId, productName, status, createdAt]
       properties:
         assessmentId:
-          type: integer
-          format: int64
+          type: string
         productName:
           type: string
         status:
           $ref: '#/components/schemas/AssessmentStatus'
-        confidence:
-          $ref: '#/components/schemas/ConfidenceLevel'
         createdAt:
           type: string
           format: date-time
@@ -934,8 +938,7 @@ components:
         - disclaimer
       properties:
         assessmentId:
-          type: integer
-          format: int64
+          type: string
         productName:
           type: string
         productPurpose:
@@ -951,8 +954,6 @@ components:
           format: int64
         status:
           $ref: '#/components/schemas/AssessmentStatus'
-        confidence:
-          $ref: '#/components/schemas/ConfidenceLevel'
         createdAt:
           type: string
           format: date-time
@@ -1026,7 +1027,7 @@ components:
     # ===== Assessments — 도메인 값 =====
     ApplicableCertification:
       type: object
-      required: [axis, type, name, authority]
+      required: [axis, type, name, authority, confidence]
       properties:
         axis:
           $ref: '#/components/schemas/CertificationAxis'
@@ -1040,6 +1041,12 @@ components:
         authority:
           type: string
           description: 소관 부처/기관
+        confidence:
+          $ref: '#/components/schemas/ConfidenceLevel'
+          description: |
+            이 인증의 적용 여부에 대한 신뢰도 라벨.
+            산출 로직은 requirements.md §4.2.1 참조 (Hybrid: RAG similarity + LLM self-critique, MIN 결합).
+            백분율 점수(confidenceScore)는 DB에 저장하되 응답에는 노출하지 않는다.
 
     TestItem:
       type: object
@@ -1104,8 +1111,7 @@ components:
       required: [assessmentId, steps]
       properties:
         assessmentId:
-          type: integer
-          format: int64
+          type: string
         steps:
           type: array
           items:

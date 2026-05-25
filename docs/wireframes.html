@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<title>KCpilot 와이어프레임 v0.1</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-light: #dbeafe;
+  --primary-50: #eff6ff;
+  --slate-900: #0f172a;
+  --slate-800: #1e293b;
+  --slate-700: #334155;
+  --slate-600: #475569;
+  --slate-500: #64748b;
+  --slate-400: #94a3b8;
+  --slate-300: #cbd5e1;
+  --slate-200: #e2e8f0;
+  --slate-100: #f1f5f9;
+  --slate-50: #f8fafc;
+  --white: #ffffff;
+  --green-500: #10b981;
+  --green-50: #d1fae5;
+  --green-700: #065f46;
+  --amber-500: #f59e0b;
+  --amber-50: #fef3c7;
+  --amber-700: #92400e;
+  --red-500: #ef4444;
+  --red-50: #fee2e2;
+  --red-700: #991b1b;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", "Noto Sans KR", sans-serif;
+  background: var(--slate-100);
+  color: var(--slate-900);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ---------- Doc header ---------- */
+.doc-header {
+  background: var(--slate-900);
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid var(--slate-800);
+}
+.doc-header-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 16px 24px;
+}
+.doc-header h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+.doc-header .meta { font-size: 12px; color: var(--slate-400); margin-top: 2px; }
+.doc-nav { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.doc-nav a {
+  font-size: 12px;
+  color: var(--slate-300);
+  text-decoration: none;
+  padding: 5px 10px;
+  background: var(--slate-800);
+  border-radius: 6px;
+  border: 1px solid var(--slate-700);
+}
+.doc-nav a:hover { background: var(--slate-700); color: white; }
+
+/* ---------- Doc main ---------- */
+.doc-main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 32px 24px 96px;
+}
+
+.intro {
+  background: white;
+  border-radius: 12px;
+  padding: 24px 28px;
+  border: 1px solid var(--slate-200);
+  margin-bottom: 48px;
+}
+.intro h2 { font-size: 16px; margin-bottom: 12px; }
+.intro p { font-size: 13px; color: var(--slate-600); margin-bottom: 8px; }
+.legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--slate-200);
+  font-size: 12px;
+  color: var(--slate-600);
+}
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-swatch { width: 14px; height: 14px; border-radius: 3px; }
+
+/* ---------- Section ---------- */
+.section { margin-bottom: 56px; }
+.section-header { margin-bottom: 16px; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.section-num {
+  display: inline-block;
+  background: var(--primary);
+  color: white;
+  min-width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  text-align: center;
+  line-height: 32px;
+  font-weight: 800;
+  font-size: 14px;
+  padding: 0 8px;
+}
+.section h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
+.section-purpose {
+  margin: 8px 0 20px;
+  padding: 12px 16px;
+  background: var(--primary-50);
+  border-left: 4px solid var(--primary);
+  border-radius: 0 8px 8px 0;
+  font-size: 13px;
+  color: var(--slate-700);
+}
+.section-purpose strong { color: var(--primary-dark); }
+
+/* ---------- Browser frame ---------- */
+.screen {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+  border: 1px solid var(--slate-200);
+}
+.browser-bar {
+  background: var(--slate-100);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--slate-200);
+}
+.browser-dots { display: flex; gap: 6px; }
+.browser-dots span {
+  width: 11px; height: 11px; border-radius: 50%;
+  background: var(--slate-300);
+}
+.browser-url {
+  flex: 1;
+  background: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--slate-500);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  border: 1px solid var(--slate-200);
+}
+.screen-body { background: var(--slate-50); }
+
+/* ---------- App header (in-screen) ---------- */
+.app-header {
+  background: white;
+  border-bottom: 1px solid var(--slate-200);
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.app-logo {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.app-logo::before {
+  content: "";
+  width: 22px; height: 22px;
+  background: var(--primary);
+  border-radius: 6px;
+  display: inline-block;
+}
+.app-nav-links { display: flex; gap: 22px; font-size: 14px; color: var(--slate-600); }
+.app-nav-links span { cursor: pointer; }
+.app-nav-links .active { color: var(--primary); font-weight: 700; }
+.app-actions { display: flex; gap: 8px; align-items: center; }
+.avatar {
+  width: 34px; height: 34px;
+  background: var(--primary-light);
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--primary-dark);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-secondary { background: white; color: var(--slate-700); border-color: var(--slate-300); }
+.btn-ghost { background: transparent; color: var(--slate-600); }
+.btn-lg { padding: 14px 26px; font-size: 15px; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-block { width: 100%; }
+
+/* ---------- Form ---------- */
+.form-group { margin-bottom: 18px; }
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--slate-700);
+  margin-bottom: 6px;
+}
+.form-label .req { color: var(--red-500); margin-left: 2px; }
+.form-label .opt { color: var(--slate-400); font-weight: 400; margin-left: 6px; font-size: 12px; }
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--slate-300);
+  border-radius: 7px;
+  font-size: 14px;
+  background: white;
+  color: var(--slate-900);
+  font-family: inherit;
+}
+.form-input.is-placeholder { color: var(--slate-400); }
+.form-help {
+  font-size: 12px;
+  color: var(--slate-500);
+  margin-top: 6px;
+}
+.radio-group { display: flex; gap: 8px; }
+.radio-pill {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--slate-300);
+  border-radius: 7px;
+  background: white;
+  font-size: 13px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--slate-700);
+}
+.radio-pill.active {
+  border-color: var(--primary);
+  background: var(--primary-50);
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+.radio-dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--slate-300);
+  display: inline-block;
+  position: relative;
+}
+.radio-pill.active .radio-dot { border-color: var(--primary); }
+.radio-pill.active .radio-dot::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  background: var(--primary);
+  border-radius: 50%;
+}
+.dropzone {
+  border: 2px dashed var(--slate-300);
+  border-radius: 8px;
+  padding: 28px;
+  text-align: center;
+  background: white;
+  color: var(--slate-500);
+  font-size: 13px;
+}
+.dropzone strong { color: var(--primary); display: block; margin-bottom: 4px; font-size: 14px; }
+
+/* ---------- Card ---------- */
+.card {
+  background: white;
+  border: 1px solid var(--slate-200);
+  border-radius: 12px;
+  padding: 22px;
+}
+.card-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.card-desc { font-size: 13px; color: var(--slate-600); line-height: 1.6; }
+
+/* ---------- Badge ---------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.badge-blue { background: var(--primary-light); color: var(--primary-dark); }
+.badge-green { background: var(--green-50); color: var(--green-700); }
+.badge-amber { background: var(--amber-50); color: var(--amber-700); }
+.badge-red { background: var(--red-50); color: var(--red-700); }
+.badge-gray { background: var(--slate-100); color: var(--slate-700); }
+
+/* ---------- UX notes ---------- */
+.ux-notes {
+  margin-top: 16px;
+  background: white;
+  border: 1px solid var(--slate-200);
+  border-radius: 10px;
+  padding: 16px 20px;
+}
+.ux-notes-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--slate-500);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.ux-notes ul { list-style: none; }
+.ux-notes li {
+  font-size: 13px;
+  color: var(--slate-700);
+  padding-left: 18px;
+  position: relative;
+  margin-bottom: 6px;
+  line-height: 1.6;
+}
+.ux-notes li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* ---------- Spinner ---------- */
+.spinner {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 5px solid var(--slate-200);
+  border-top-color: var(--primary);
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- Step list ---------- */
+.step-list { display: flex; flex-direction: column; gap: 10px; }
+.step-row { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+.step-icon {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.step-icon.done { background: var(--green-500); color: white; }
+.step-icon.doing { background: var(--primary); color: white; }
+.step-icon.todo { background: var(--slate-200); color: var(--slate-400); border: 1px solid var(--slate-300); }
+.step-row.done { color: var(--slate-500); }
+.step-row.doing { color: var(--slate-900); font-weight: 600; }
+.step-row.todo { color: var(--slate-400); }
+
+/* ---------- Utility ---------- */
+.row { display: flex; gap: 16px; }
+.col { flex: 1; }
+.divider { height: 1px; background: var(--slate-200); margin: 16px 0; }
+</style>
+</head>
+<body>
+
+<header class="doc-header">
+  <div class="doc-header-inner">
+    <h1>KCpilot 와이어프레임</h1>
+    <div class="meta">v0.1 · 2026-05-25 · 데스크톱 우선 (1280px) · Next.js 15 + Tailwind 기준</div>
+    <nav class="doc-nav">
+      <a href="#screen-1">1. 랜딩</a>
+      <a href="#screen-2">2. 로그인/회원가입</a>
+      <a href="#screen-3">3. 진단 입력</a>
+      <a href="#screen-4">4. 진단 대기</a>
+      <a href="#screen-5">5. 진단 결과</a>
+      <a href="#screen-6">6. 진단 이력</a>
+      <a href="#screen-7">7. 공통 레이아웃</a>
+    </nav>
+  </div>
+</header>
+
+<main class="doc-main">
+
+<section class="intro">
+  <h2>이 문서에 대하여</h2>
+  <p>KCpilot 7개 화면의 레이아웃·정보 구조·인터랙션을 정의한 미드피델리티 와이어프레임. 색상/타이포는 시안 수준이며 최종 디자인은 별도 단계에서 정한다.</p>
+  <p>각 화면 아래의 <strong>UX 의사결정</strong> 섹션이 "왜 이렇게 배치했는지"에 대한 근거다. 리뷰 시 그 부분 위주로 확인.</p>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-swatch" style="background: var(--primary);"></span>주요 액션 / 링크</div>
+    <div class="legend-item"><span class="legend-swatch" style="background: var(--green-500);"></span>신뢰도 HIGH / 성공</div>
+    <div class="legend-item"><span class="legend-swatch" style="background: var(--amber-500);"></span>신뢰도 MEDIUM / 주의</div>
+    <div class="legend-item"><span class="legend-swatch" style="background: var(--red-500);"></span>신뢰도 LOW / 위험</div>
+    <div class="legend-item"><span class="legend-swatch" style="background: var(--slate-300);"></span>비활성 / 보조</div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SCREEN 1: 랜딩 페이지                                          -->
+<!-- ============================================================ -->
+<section class="section" id="screen-1">
+  <div class="section-header">
+    <span class="section-num">1</span>
+    <h2>랜딩 페이지 (비로그인)</h2>
+  </div>
+  <div class="section-purpose">
+    <strong>목적:</strong> 첫 방문자가 5초 안에 "이게 뭔지 + 왜 좋은지 + 어떻게 시작하는지" 알 수 있게 한다. 비전문가 대상이라 인증 용어 최소화.
+  </div>
+
+  <div class="screen">
+    <div class="browser-bar">
+      <div class="browser-dots"><span></span><span></span><span></span></div>
+      <div class="browser-url">https://kcpilot.com/</div>
+    </div>
+    <div class="screen-body">
+
+      <header class="app-header">
+        <div class="app-logo">KCpilot</div>
+        <nav class="app-nav-links">
+          <span>서비스 소개</span>
+          <span>이용 가이드</span>
+          <span>자주 묻는 질문</span>
+        </nav>
+        <div class="app-actions">
+          <button class="btn btn-ghost">로그인</button>
+          <button class="btn btn-primary">회원가입</button>
+        </div>
+      </header>
+
+      <!-- Hero -->
+      <div style="padding: 88px 32px 72px; text-align: center; background: linear-gradient(180deg, white 0%, var(--slate-50) 100%);">
+        <div class="badge badge-blue" style="margin-bottom: 20px;">AI 기반 KC 인증 사전진단</div>
+        <h1 style="font-size: 46px; font-weight: 800; line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 18px;">
+          KC 인증, 5분 만에<br>AI가 사전진단해드립니다
+        </h1>
+        <p style="font-size: 17px; color: var(--slate-600); max-width: 600px; margin: 0 auto 32px; line-height: 1.6;">
+          제품에 어떤 인증이 필요한지, 시험 항목과 기관은 어디인지<br>전문가 없이 빠르게 확인하세요
+        </p>
+        <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 14px;">
+          <button class="btn btn-primary btn-lg">무료로 진단 시작 →</button>
+          <button class="btn btn-secondary btn-lg">▶ 1분 데모 보기</button>
+        </div>
+        <p style="font-size: 12px; color: var(--slate-500);">
+          ✓ 신용카드 불필요 &nbsp;·&nbsp; ✓ 결과 즉시 확인 &nbsp;·&nbsp; ✓ 출처 법령 제공
+        </p>
+      </div>
+
+      <!-- 3 Features -->
+      <div style="padding: 72px 32px; background: white;">
+        <div style="text-align: center; margin-bottom: 44px;">
+          <div style="font-size: 13px; color: var(--primary); font-weight: 700; letter-spacing: 0.06em; margin-bottom: 8px;">WHY KCPILOT</div>
+          <h2 style="font-size: 28px; font-weight: 800;">전문가 상담 전, 가장 빠른 1차 답</h2>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; max-width: 1040px; margin: 0 auto;">
+          <div class="card">
+            <div style="width:44px;height:44px;background:var(--primary-light);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;font-size:20px;">⚡</div>
+            <div class="card-title">5분 안에 진단 완료</div>
+            <div class="card-desc">제품 정보만 입력하면 AI가 즉시 분석. 인증원·법무법인 상담 전 1차 스크리닝 용도로 최적입니다.</div>
+          </div>
+          <div class="card">
+            <div style="width:44px;height:44px;background:var(--primary-light);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;font-size:20px;">📋</div>
+            <div class="card-title">출처 법령 함께 제공</div>
+            <div class="card-desc">단순 추천이 아니라 "왜 이 인증이 필요한지" 관련 법령 조항과 함께 안내합니다.</div>
+          </div>
+          <div class="card">
+            <div style="width:44px;height:44px;background:var(--primary-light);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;font-size:20px;">🔍</div>
+            <div class="card-title">AI 추론 과정 공개</div>
+            <div class="card-desc">어떤 근거로 이 결론에 도달했는지 단계별 추론 로그를 투명하게 보여드립니다.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- How it works -->
+      <div style="padding: 72px 32px; background: var(--slate-50);">
+        <div style="text-align: center; margin-bottom: 44px;">
+          <div style="font-size: 13px; color: var(--primary); font-weight: 700; letter-spacing: 0.06em; margin-bottom: 8px;">HOW IT WORKS</div>
+          <h2 style="font-size: 28px; font-weight: 800;">사용법은 간단합니다</h2>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; max-width: 1040px; margin: 0 auto;">
+          <div class="card" style="text-align: center;">
+            <div style="width:56px;height:56px;background:var(--primary);color:white;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;margin-bottom:14px;">1</div>
+            <div style="font-weight:700; margin-bottom:6px;">제품 정보 입력</div>
+            <div style="font-size:13px; color: var(--slate-600); line-height:1.6;">제품명, 용도, 전기 사용 여부 등 기본 정보만 입력하세요</div>
+          </div>
+          <div class="card" style="text-align: center;">
+            <div style="width:56px;height:56px;background:var(--primary);color:white;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;margin-bottom:14px;">2</div>
+            <div style="font-weight:700; margin-bottom:6px;">AI 분석 진행</div>
+            <div style="font-size:13px; color: var(--slate-600); line-height:1.6;">법령 DB와 매칭하여 30~60초 안에 분석 완료</div>
+          </div>
+          <div class="card" style="text-align: center;">
+            <div style="width:56px;height:56px;background:var(--primary);color:white;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;margin-bottom:14px;">3</div>
+            <div style="font-weight:700; margin-bottom:6px;">결과 확인</div>
+            <div style="font-size:13px; color: var(--slate-600); line-height:1.6;">필요한 인증, 시험 항목, 시험기관까지 한 번에</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Final CTA -->
+      <div style="padding: 64px 32px; background: var(--slate-900); text-align: center;">
+        <h2 style="color: white; font-size: 28px; font-weight: 800; margin-bottom: 10px; letter-spacing: -0.01em;">제품 출시 전, 인증 부담을 줄이세요</h2>
+        <p style="color: var(--slate-400); margin-bottom: 24px; font-size: 15px;">중소기업·1인 창업자를 위한 무료 사전진단 서비스</p>
+        <button class="btn btn-primary btn-lg">지금 진단 시작하기 →</button>
+      </div>
+
+      <!-- Footer -->
+      <footer style="background: #0a0f1a; padding: 28px 32px; color: var(--slate-400); font-size: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; max-width: 1100px; margin: 0 auto; gap: 24px;">
+          <div>
+            <div style="color: white; font-weight: 800; margin-bottom: 6px;">KCpilot</div>
+            <div style="line-height: 1.6;">본 서비스는 참고용이며 법적 효력이 없습니다.<br>최종 인증은 공인기관 확인이 필요합니다.</div>
+          </div>
+          <div style="display: flex; gap: 22px;">
+            <span>이용약관</span>
+            <span>개인정보처리방침</span>
+            <span>문의하기</span>
+          </div>
+        </div>
+      </footer>
+
+    </div>
+  </div>
+
+  <div class="ux-notes">
+    <div class="ux-notes-title">UX 의사결정</div>
+    <ul>
+      <li>히어로 한 줄로 가치 제안: "5분 만에 사전진단" — 비전문가에게 일상어로 약속한다.</li>
+      <li>CTA 두 개를 나란히: 진단 시작(primary) + 데모 보기(secondary). 망설이는 사용자에게 낮은 부담 경로 제공.</li>
+      <li>"신용카드 불필요" 마이크로카피로 진입 장벽 제거.</li>
+      <li>3 features는 차별점(속도 / 출처 / 추론 투명성)에 집중. "왜 다른 도구 대신 이걸?"에 답한다.</li>
+      <li>푸터 면책 문구 상시 노출 — F-04 요구사항: "법적 효력 없음" 명시.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SCREEN 2: 로그인 / 회원가입                                    -->
+<!-- ============================================================ -->
+<section class="section" id="screen-2">
+  <div class="section-header">
+    <span class="section-num">2</span>
+    <h2>로그인 / 회원가입</h2>
+  </div>
+  <div class="section-purpose">
+    <strong>목적:</strong> 가입 부담 최소화 (이메일+비밀번호만). 로그인/회원가입 한 페이지에서 탭으로 전환.
+  </div>
+
+  <div class="screen">
+    <div class="browser-bar">
+      <div class="browser-dots"><span></span><span></span><span></span></div>
+      <div class="browser-url">https://kcpilot.com/login</div>
+    </div>
+    <div class="screen-body" style="padding: 72px 32px; min-height: 720px;">
+
+      <div style="max-width: 880px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+
+        <!-- 로그인 카드 -->
+        <div style="background: white; border: 1px solid var(--slate-200); border-radius: 12px; padding: 32px;">
+          <div style="text-align:center; margin-bottom: 24px;">
+            <div class="app-logo" style="display:inline-flex; margin-bottom: 14px;">KCpilot</div>
+            <h2 style="font-size: 22px; font-weight: 800;">로그인</h2>
+            <p style="font-size: 13px; color: var(--slate-500); margin-top: 4px;">진단을 시작하려면 로그인하세요</p>
+          </div>
+
+          <div style="display: flex; border-bottom: 1px solid var(--slate-200); margin-bottom: 22px;">
+            <div style="flex:1; padding: 10px; text-align: center; font-size: 13px; font-weight: 700; color: var(--primary); border-bottom: 2px solid var(--primary); margin-bottom: -1px;">로그인</div>
+            <div style="flex:1; padding: 10px; text-align: center; font-size: 13px; color: var(--slate-500);">회원가입</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">이메일</label>
+            <input class="form-input is-placeholder" value="you@company.com" readonly>
+          </div>
+          <div class="form-group">
+            <label class="form-label">비밀번호</label>
+            <input class="form-input is-placeholder" value="••••••••" type="password" readonly>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 12px;">
+            <label style="display: flex; align-items: center; gap: 6px; color: var(--slate-600);">
+              <span style="width:14px;height:14px;border:1px solid var(--slate-300);border-radius:3px;display:inline-block;"></span>
+              자동 로그인
+            </label>
+            <a style="color: var(--primary); font-weight: 600;">비밀번호를 잊으셨나요?</a>
+          </div>
+
+          <button class="btn btn-primary btn-block btn-lg">로그인</button>
+
+          <div style="text-align: center; margin-top: 16px; font-size: 13px; color: var(--slate-500);">
+            계정이 없으신가요? <a style="color: var(--primary); font-weight: 600;">회원가입</a>
+          </div>
+        </div>
+
+        <!-- 회원가입 카드 -->
+        <div style="background: white; border: 1px solid var(--slate-200); border-radius: 12px; padding: 32px;">
+          <div style="text-align:center; margin-bottom: 24px;">
+            <div class="app-logo" style="display:inline-flex; margin-bottom: 14px;">KCpilot</div>
+            <h2 style="font-size: 22px; font-weight: 800;">회원가입</h2>
+            <p style="font-size: 13px; color: var(--slate-500); margin-top: 4px;">무료로 시작하세요</p>
+          </div>
+
+          <div style="display: flex; border-bottom: 1px solid var(--slate-200); margin-bottom: 22px;">
+            <div style="flex:1; padding: 10px; text-align: center; font-size: 13px; color: var(--slate-500);">로그인</div>
+            <div style="flex:1; padding: 10px; text-align: center; font-size: 13px; font-weight: 700; color: var(--primary); border-bottom: 2px solid var(--primary); margin-bottom: -1px;">회원가입</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">이메일 <span class="req">*</span></label>
+            <input class="form-input is-placeholder" value="이메일을 입력하세요" readonly>
+          </div>
+          <div class="form-group">
+            <label class="form-label">비밀번호 <span class="req">*</span></label>
+            <input class="form-input is-placeholder" value="8자 이상, 영문+숫자 조합" readonly>
+            <div class="form-help">8자 이상, 영문·숫자·특수문자 중 2종 이상 조합</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">비밀번호 확인 <span class="req">*</span></label>
+            <input class="form-input is-placeholder" value="비밀번호를 다시 입력하세요" readonly>
+          </div>
+
+          <div style="margin: 16px 0; padding: 12px; background: var(--slate-50); border-radius: 7px; font-size: 12px; color: var(--slate-600);">
+            <label style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px;">
+              <span style="width:14px;height:14px;border:1px solid var(--slate-300);border-radius:3px; flex-shrink:0; margin-top:2px;"></span>
+              <span><strong style="color:var(--slate-900);">[필수]</strong> 이용약관에 동의합니다 <a style="color:var(--primary);">전문보기</a></span>
+            </label>
+            <label style="display: flex; align-items: flex-start; gap: 8px;">
+              <span style="width:14px;height:14px;border:1px solid var(--slate-300);border-radius:3px; flex-shrink:0; margin-top:2px;"></span>
+              <span><strong style="color:var(--slate-900);">[필수]</strong> 개인정보처리방침에 동의합니다 <a style="color:var(--primary);">전문보기</a></span>
+            </label>
+          </div>
+
+          <button class="btn btn-primary btn-block btn-lg">가입하고 진단 시작 →</button>
+        </div>
+
+      </div>
+
+      <p style="text-align: center; margin-top: 32px; font-size: 12px; color: var(--slate-400);">
+        ※ 위 두 카드는 같은 화면의 다른 탭 상태를 좌우로 나열한 것입니다.
+      </p>
+
+    </div>
+  </div>
+
+  <div class="ux-notes">
+    <div class="ux-notes-title">UX 의사결정</div>
+    <ul>
+      <li>가운데 단일 카드로 집중도 ↑. 좌우 노이즈 제거.</li>
+      <li>탭 전환식 — 로그인하려고 들어왔다가 회원가입 클릭해도 같은 화면. 페이지 이동 마찰 없음.</li>
+      <li>회원가입은 이메일+비밀번호만. 회사명/사업자번호는 받지 않음 — 일단 가입시키고 진단부터.</li>
+      <li>약관 동의 체크박스는 회원가입에만 노출. 로그인 화면이 깔끔.</li>
+      <li>"비밀번호를 잊으셨나요?" 링크 — 실제 흐름은 v2.</li>
+      <li>소셜 로그인(카카오·구글)은 v2. 이메일/패스워드만으로 MVP.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SCREEN 3: 진단 입력 폼                                         -->
+<!-- ============================================================ -->
+<section class="section" id="screen-3">
+  <div class="section-header">
+    <span class="section-num">3</span>
+    <h2>진단 입력 폼</h2>
+  </div>
+  <div class="section-purpose">
+    <strong>목적:</strong> "5분 안에 끝낼 수 있다"는 약속을 지키기 위해 한 페이지 폼. 필수 항목 최소화, 선택 항목은 명확히 표시.
+  </div>
+
+  <div class="screen">
+    <div class="browser-bar">
+      <div class="browser-dots"><span></span><span></span><span></span></div>
+      <div class="browser-url">https://kcpilot.com/assessments/new</div>
+    </div>
+    <div class="screen-body">
+
+      <header class="app-header">
+        <div class="app-logo">KCpilot</div>
+        <nav class="app-nav-links">
+          <span class="active">새 진단</span>
+          <span>내 이력</span>
+        </nav>
+        <div class="app-actions">
+          <span style="font-size: 13px; color: var(--slate-600);">hamin@example.com</span>
+          <div class="avatar">H</div>
+        </div>
+      </header>
+
+      <div style="padding: 40px 32px; max-width: 780px; margin: 0 auto;">
+
+        <div style="margin-bottom: 32px;">
+          <h1 style="font-size: 26px; font-weight: 800; margin-bottom: 6px;">새 진단 시작하기</h1>
+          <p style="font-size: 14px; color: var(--slate-600);">제품에 대한 정보를 알려주세요. AI가 필요한 KC 인증 종류와 시험 항목을 분석합니다.</p>
+        </div>
+
+        <!-- Step indicator -->
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 28px; padding: 14px 18px; background: white; border: 1px solid var(--slate-200); border-radius: 10px;">
+          <div style="display:flex; align-items:center; gap:8px; color: var(--primary); font-weight: 700; font-size: 13px;">
+            <div style="width:22px;height:22px;border-radius:50%;background:var(--primary);color:white;display:inline-flex;align-items:center;justify-content:center;font-size:11px;">1</div>
+            정보 입력
+          </div>
+          <div style="flex:1; height:2px; background: var(--slate-200);"></div>
+          <div style="display:flex; align-items:center; gap:8px; color: var(--slate-400); font-size: 13px;">
+            <div style="width:22px;height:22px;border-radius:50%;background:var(--slate-200);display:inline-flex;align-items:center;justify-content:center;font-size:11px;">2</div>
+            AI 진단
+          </div>
+          <div style="flex:1; height:2px; background: var(--slate-200);"></div>
+          <div style="display:flex; align-items:center; gap:8px; color: var(--slate-400); font-size: 13px;">
+            <div style="width:22px;height:22px;border-radius:50%;background:var(--slate-200);display:inline-flex;align-items:center;justify-content:center;font-size:11px;">3</div>
+            결과 확인
+          </div>
+        </div>
+
+        <!-- 기본 정보 -->
+        <div class="card" style="margin-bottom: 16px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom: 16px;">
+            <span class="badge badge-blue">필수</span>
+            <h3 style="font-size: 15px; font-weight: 700;">제품 기본 정보</h3>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">제품명 <span class="req">*</span></label>
+            <input class="form-input is-placeholder" value="예: 휴대용 헤어드라이어, 무선 충전기" readonly>
+            <div class="form-help">시장에 출시할 제품의 이름이나 카테고리를 적어주세요</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">제품 용도 / 사용 환경 <span class="req">*</span></label>
+            <input class="form-input is-placeholder" value="예: 가정용 모발 건조, 사무실 노트북 충전" readonly>
+            <div class="form-help">누가, 어디서, 어떻게 쓰는지 한두 문장으로 설명해주세요</div>
+          </div>
+        </div>
+
+        <!-- 안전성 -->
+        <div class="card" style="margin-bottom: 16px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom: 16px;">
+            <span class="badge badge-blue">필수</span>
+            <h3 style="font-size: 15px; font-weight: 700;">안전성 관련 정보</h3>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">전기를 사용하는 제품인가요? <span class="req">*</span></label>
+            <div class="radio-group">
+              <div class="radio-pill active"><span class="radio-dot"></span>예, 전기를 사용합니다</div>
+              <div class="radio-pill"><span class="radio-dot"></span>아니요</div>
+            </div>
+            <div class="form-help">배터리 포함 / 콘센트 연결 / 무선 충전 등 어떤 식으로든 전기를 쓰면 "예"</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">어린이가 사용하는 제품인가요? <span class="req">*</span></label>
+            <div class="radio-group">
+              <div class="radio-pill"><span class="radio-dot"></span>예</div>
+              <div class="radio-pill active"><span class="radio-dot"></span>아니요</div>
+              <div class="radio-pill"><span class="radio-dot"></span>잘 모르겠어요</div>
+            </div>
+            <div class="form-help">만 13세 이하가 주 사용자라면 "예" — 어린이제품법 적용 여부 판단에 사용</div>
+          </div>
+        </div>
+
+        <!-- 상세 사양 (선택) -->
+        <div class="card" style="margin-bottom: 16px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom: 16px;">
+            <span class="badge badge-gray">선택</span>
+            <h3 style="font-size: 15px; font-weight: 700;">상세 사양 <span style="font-weight:400; color:var(--slate-500); font-size:13px;">— 알면 더 정확해집니다</span></h3>
+          </div>
+
+          <div class="row">
+            <div class="col form-group">
+              <label class="form-label">정격 전압 <span class="opt">선택</span></label>
+              <input class="form-input is-placeholder" value="예: AC 220V" readonly>
+            </div>
+            <div class="col form-group">
+              <label class="form-label">정격 소비전력 <span class="opt">선택</span></label>
+              <input class="form-input is-placeholder" value="예: 1200W" readonly>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">주요 소재 / 부품 <span class="opt">선택</span></label>
+            <input class="form-input is-placeholder" value="예: ABS 플라스틱 외장, 리튬이온 배터리 내장" readonly>
+          </div>
+        </div>
+
+        <!-- PDF 업로드 (선택) -->
+        <div class="card" style="margin-bottom: 24px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom: 16px;">
+            <span class="badge badge-gray">선택</span>
+            <h3 style="font-size: 15px; font-weight: 700;">제품 자료 첨부 <span style="font-weight:400; color:var(--slate-500); font-size:13px;">— 첨부하면 정확도 ↑</span></h3>
+          </div>
+
+          <div class="dropzone">
+            <strong>📎 PDF 파일을 끌어다 놓거나 클릭하여 업로드</strong>
+            제품 사양서, 카탈로그, 설명서 등 (최대 10MB, PDF만)
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button class="btn btn-secondary btn-lg">임시 저장</button>
+          <button class="btn btn-primary btn-lg">진단 시작하기 →</button>
+        </div>
+
+        <p style="margin-top: 16px; padding: 12px; background: var(--amber-50); border-radius: 7px; font-size: 12px; color: var(--amber-700); text-align: center;">
+          ⓘ 진단은 약 30~60초 소요됩니다. 진행 중 페이지를 닫아도 결과는 <strong>"내 이력"</strong>에 저장됩니다.
+        </p>
+
+      </div>
+
+    </div>
+  </div>
+
+  <div class="ux-notes">
+    <div class="ux-notes-title">UX 의사결정</div>
+    <ul>
+      <li>한 페이지 폼 (멀티스텝 X) — "5분 안에 끝낸다"는 약속과 맞물림.</li>
+      <li>섹션을 4개로 분할: 기본 정보 → 안전성 → 상세 사양(선택) → 자료(선택). 필수가 먼저, 선택이 뒤.</li>
+      <li>각 필드 아래 <strong>"왜 묻는지"</strong> 풀이 텍스트. 비전문가가 "이게 왜 필요해?" 안 느끼게.</li>
+      <li>"잘 모르겠어요" 옵션 — 비전문가는 답을 모를 수 있음. 모름을 정직하게 입력할 수 있어야 정확도가 올라간다.</li>
+      <li>PDF 업로드는 맨 마지막 + 선택 — 없어도 진단 진행되어야 함 (F-03 요구사항).</li>
+      <li>"임시 저장"으로 중간 이탈 사용자 회수.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SCREEN 4: 진단 대기 화면                                       -->
+<!-- ============================================================ -->
+<section class="section" id="screen-4">
+  <div class="section-header">
+    <span class="section-num">4</span>
+    <h2>진단 대기 화면</h2>
+  </div>
+  <div class="section-purpose">
+    <strong>목적:</strong> 30~60초 동안 사용자가 "멈췄나?" 느끼지 않게. 단계 진행 + 추정 남은 시간 표시. 비동기 폴링 결과로 자동 전환.
+  </div>
+
+  <div class="screen">
+    <div class="browser-bar">
+      <div class="browser-dots"><span></span><span></span><span></span></div>
+      <div class="browser-url">https://kcpilot.com/assessments/V1StGXR82aBc/pending</div>
+    </div>
+    <div class="screen-body">
+
+      <header class="app-header">
+        <div class="app-logo">KCpilot</div>
+        <nav class="app-nav-links">
+          <span class="active">새 진단</span>
+          <span>내 이력</span>
+        </nav>
+        <div class="app-actions">
+          <span style="font-size: 13px; color: var(--slate-600);">hamin@example.com</span>
+          <div class="avatar">H</div>
+        </div>
+      </header>
+
+      <div style="padding: 56px 32px; min-height: 600px; display: flex; align-items: center; justify-content: center;">
+        <div style="width: 100%; max-width: 560px;">
+
+          <!-- Step indicator (step 2) -->
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 32px; padding: 12px 16px; background: white; border: 1px solid var(--slate-200); border-radius: 10px;">
+            <div style="display:flex; align-items:center; gap:8px; color: var(--green-700); font-size: 12px; font-weight: 600;">
+              <div style="width:20px;height:20px;border-radius:50%;background:var(--green-500);color:white;display:inline-flex;align-items:center;justify-content:center;font-size:11px;">✓</div>
+              정보 입력
+            </div>
+            <div style="flex:1; height:2px; background: var(--green-500);"></div>
+            <div style="display:flex; align-items:center; gap:8px; color: var(--primary); font-weight: 700; font-size: 12px;">
+              <div style="width:20px;height:20px;border-radius:50%;background:var(--primary);color:white;display:inline-flex;align-items:center;justify-content:center;font-size:11px;">2</div>
+              AI 진단
+            </div>
+            <div style="flex:1; height:2px; background: var(--slate-200);"></div>
+            <div style="display:flex; align-items:center; gap:8px; color: var(--slate-400); font-size: 12px;">
+              <div style="width:20px;height:20px;border-radius:50%;background:var(--slate-200);display:inline-flex;align-items:center;justify-content:center;font-size:11px;">3</div>
+              결과 확인
+            </div>
+          </div>
+
+          <!-- Waiting card -->
+          <div style="background: white; border: 1px solid var(--slate-200); border-radius: 14px; padding: 40px 32px; text-align: center;">
+            <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+              <div class="spinner"></div>
+            </div>
+
+            <h2 style="font-size: 22px; font-weight: 800; margin-bottom: 6px;">AI가 진단을 진행하고 있습니다</h2>
+            <p style="font-size: 13px; color: var(--slate-500); margin-bottom: 28px;">
+              제품 정보를 분석하고 관련 법령을 검색하는 중입니다
+            </p>
+
+            <div class="step-list" style="text-align: left; max-width: 360px; margin: 0 auto 28px;">
+              <div class="step-row done">
+                <div class="step-icon done">✓</div>
+                제품 정보 분석 완료
+              </div>
+              <div class="step-row doing">
+                <div class="step-icon doing">⟳</div>
+                관련 법령 검색 중...
+              </div>
+              <div class="step-row todo">
+                <div class="step-icon todo">3</div>
+                인증 종류 매칭
+              </div>
+              <div class="step-row todo">
+                <div class="step-icon todo">4</div>
+                시험 항목 추출
+              </div>
+              <div class="step-row todo">
+                <div class="step-icon todo">5</div>
+                결과 생성
+              </div>
+            </div>
+
+            <div style="padding: 12px; background: var(--slate-50); border-radius: 8px; font-size: 13px; color: var(--slate-700);">
+              ⏱ 약 <strong style="color: var(--primary);">25초</strong> 남았습니다
+            </div>
+          </div>
+
+          <div style="margin-top: 16px; padding: 14px 18px; background: var(--amber-50); border-radius: 10px; font-size: 12px; color: var(--amber-700); display: flex; gap: 10px;">
+            <div>ⓘ</div>
+            <div>
+              <strong>페이지를 닫아도 괜찮습니다.</strong> 진단이 완료되면 결과가 <a style="color: var(--primary); font-weight: 600;">내 이력</a>에 저장됩니다.
+              진단 ID: <strong style="font-family: ui-monospace, monospace;">V1StGXR82aBc</strong>
+            </div>
+          </div>
+
+          <div style="text-align: center; margin-top: 20px;">
+            <button class="btn btn-ghost btn-sm">진단 취소</button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="ux-notes">
+    <div class="ux-notes-title">UX 의사결정</div>
+    <ul>
+      <li>가운데 정렬 + 단순한 시각 — 결과 화면이 메인이므로 여기는 "거쳐가는 곳" 톤.</li>
+      <li>5단계 진행 표시 → "멈춘 게 아니라 일하는 중"을 명확히. 단계 메시지로 진행 의미 전달 (단순 % 게이지 X).</li>
+      <li>추정 남은 시간 표시 — 카운트다운으로 실시간 갱신.</li>
+      <li>진단 ID 미리 노출 + "닫아도 됩니다" 안내. 새로고침/창 닫기 공포 제거.</li>
+      <li>진단 취소는 작게 (ghost 버튼) — 우발적 취소 방지.</li>
+      <li>(구현 노트) 폴링 주기 2~3초 권장. 완료 시 자동 redirect to /assessments/:id.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SCREEN 5: 진단 결과 화면                                       -->
+<!-- ============================================================ -->
+<section class="section" id="screen-5">
+  <div class="section-header">
+    <span class="section-num">5</span>
+    <h2>진단 결과 화면</h2>
+  </div>
+  <div class="section-purpose">
+    <strong>목적:</strong> 복수 인증을 동시에 표시 + 신뢰도별 시각적 차등 + 추론 과정 투명 공개 + 면책 문구 상시 노출. F-04/F-05/F-06 요구사항 모두 반영.
+  </div>
+
+  <div class="screen">
+    <div class="browser-bar">
+      <div class="browser-dots"><span></span><span></span><span></span></div>
+      <div class="browser-url">https://kcpilot.com/assessments/V1StGXR82aBc</div>
+    </div>
+    <div class="screen-body">
+
+      <header class="app-header">
+        <div class="app-logo">KCpilot</div>
+        <nav class="app-nav-links">
+          <span>새 진단</span>
+          <span class="active">내 이력</span>
+        </nav>
+        <div class="app-actions">
+          <span style="font-size: 13px; color: var(--slate-600);">hamin@example.com</span>
+          <div class="avatar">H</div>
+        </div>
+      </header>
+
+      <div style="padding: 32px; max-width: 1040px; margin: 0 auto;">
+
+        <div style="font-size: 12px; color: var(--slate-500); margin-bottom: 12px;">
+          <a style="color: var(--primary);">내 이력</a> &nbsp;›&nbsp; 진단 결과
+        </div>
+
+        <!-- 진단 요약 헤더 -->
+        <div style="background: white; border: 1px solid var(--slate-200); border-radius: 12px; padding: 24px 28px; margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+            <div>
+              <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                <span class="badge badge-green">✓ 진단 완료</span>
+                <span class="badge badge-gray">V1StGXR82aBc</span>
+              </div>
+              <h1 style="font-size: 24px; font-weight: 800; margin-bottom: 6px;">가정용 휴대용 헤어드라이어</h1>
+              <p style="font-size: 13px; color: var(--slate-600);">전기 사용 · 가정용 · 어린이 비대상 · 2026-05-25 14:32 진단</p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-secondary btn-sm">📄 PDF 저장</button>
+              <button class="btn btn-secondary btn-sm">🔗 공유</button>
+              <button class="btn btn-primary btn-sm">+ 새 진단</button>
+            </div>
+          </div>
+        </div>
+
+        <h2 style="font-size: 18px; font-weight: 800; margin: 28px 0 14px; display: flex; align-items: center; gap: 8px;">
+          📋 필요한 KC 인증 <span class="badge badge-blue">2개</span>
+        </h2>
+
+        <!-- HIGH 인증 카드 -->
+        <div style="background: white; border: 1px solid var(--slate-200); border-left: 4px solid var(--green-500); border-radius: 10px; padding: 24px 26px; margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 4px;">
+                안전확인 인증 <span style="font-weight: 400; color: var(--slate-500); font-size: 13px;">(화재·감전 위험 가전제품)</span>
+              </h3>
+              <p style="font-size: 13px; color: var(--slate-600);">
+                전기제품안전관리법에 따라 출시 전 시험기관에서 검사를 받고 신고해야 합니다.
+              </p>
+            </div>
+            <span class="badge badge-green">신뢰도 HIGH</span>
+          </div>
+
+          <div class="divider"></div>
+
+          <div style="font-size: 13px; font-weight: 700; color: var(--slate-700); margin-bottom: 8px;">시험 항목 (총 6개)</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px;">
+            <span class="badge badge-gray">절연 저항</span>
+            <span class="badge badge-gray">내전압</span>
+            <span class="badge badge-gray">접지 연속성</span>
+            <span class="badge badge-gray">온도 상승</span>
+            <span class="badge badge-gray">+2개 더 보기 ▾</span>
+          </div>
+
+          <div style="background: var(--slate-50); padding: 12px 14px; border-radius: 8px; font-size: 12px; color: var(--slate-600);">
+            <strong style="color: var(--slate-800);">📜 근거 법령:</strong> 전기용품 및 생활용품 안전관리법 시행규칙 별표 3 (안전확인 대상 전기용품) · 헤어드라이어는 정격 입력이 1kW 이하인 모발 건조용 전기기기로 분류됨
+          </div>
+        </div>
+
+        <!-- MEDIUM 인증 카드 -->
+        <div style="background: white; border: 1px solid var(--slate-200); border-left: 4px solid var(--amber-500); border-radius: 10px; padding: 24px 26px; margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 4px;">
+                전자파 적합성 (KC EMC) <span style="font-weight: 400; color: var(--slate-500); font-size: 13px;">(전자파 방출·내성 검증)</span>
+              </h3>
+              <p style="font-size: 13px; color: var(--slate-600);">
+                모터 사용 가전제품은 일반적으로 전자파 적합성 검사가 필요합니다.
+              </p>
+            </div>
+            <span class="badge badge-amber">신뢰도 MEDIUM</span>
+          </div>
+
+          <div style="background: var(--amber-50); border-radius: 8px; padding: 12px 14px; font-size: 12px; color: var(--amber-700); margin-bottom: 12px;">
+            <strong>⚠ 추가 확인 권장:</strong> 정확한 적용 여부는 제품의 정격 소비전력과 모터 사양에 따라 달라집니다. 소비전력 정보를 추가 입력하시면 정확도가 올라갑니다.
+          </div>
+
+          <div style="font-size: 13px; font-weight: 700; color: var(--slate-700); margin-bottom: 8px;">시험 항목 (총 4개)</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            <span class="badge badge-gray">전도 방출</span>
+            <span class="badge badge-gray">방사 방출</span>
+            <span class="badge badge-gray">정전기 방전 내성</span>
+            <span class="badge badge-gray">+1개 더 보기 ▾</span>
+          </div>
+        </div>
+
+        <!-- LOW 처리 예시 안내 -->
+        <div style="background: var(--red-50); border: 1px dashed var(--red-500); border-radius: 10px; padding: 14px 18px; margin-bottom: 24px; font-size: 12px; color: var(--red-700);">
+          <strong>📌 신뢰도 LOW일 때의 표시 (예시 안내)</strong><br>
+          카드 테두리가 빨간색으로 바뀌고, 상단에 <em>"이 결과는 불확실합니다. 반드시 전문가 상담을 권장합니다"</em> 배너가 추가됩니다. 시험 항목은 회색 처리.
+        </div>
+
+        <h2 style="font-size: 18px; font-weight: 800; margin: 28px 0 14px;">🏢 추천 시험기관</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 24px;">
+          <div class="card">
+            <div style="font-weight: 700; margin-bottom: 4px;">KTL 한국산업기술시험원</div>
+            <div style="font-size: 12px; color: var(--slate-500); margin-bottom: 10px;">경기 안산시 상록구</div>
+            <div style="font-size: 12px; color: var(--slate-600); margin-bottom: 12px;">전기·전자 분야 종합 시험 가능</div>
+            <button class="btn btn-secondary btn-sm btn-block">상세 보기</button>
+          </div>
+          <div class="card">
+            <div style="font-weight: 700; margin-bottom: 4px;">KTR 한국화학융합시험연구원</div>
+            <div style="font-size: 12px; color: var(--slate-500); margin-bottom: 10px;">경기 과천시</div>
+            <div style="font-size: 12px; color: var(--slate-600); margin-bottom: 12px;">소형 가전 빠른 처리 강점</div>
+            <button class="btn btn-secondary btn-sm btn-block">상세 보기</button>
+          </div>
+          <div class="card">
+            <div style="font-weight: 700; margin-bottom: 4px;">KCL 한국건설생활환경시험연구원</div>
+            <div style="font-size: 12px; color: var(--slate-500); margin-bottom: 10px;">서울 강남구</div>
+            <div style="font-size: 12px; color: var(--slate-600); margin-bottom: 12px;">생활가전 EMC 시험 보유</div>
+            <button class="btn btn-secondary btn-sm btn-block">상세 보기</button>
+          </div>
+        </div>
+
+        <h2 style="font-size: 18px; font-weight: 800; margin: 28px 0 14px;">⚠ 유사 제품 리콜 사례 (참고)</h2>
+        <div style="background: white; border: 1px solid var(--slate-200); border-radius: 10px; overflow: hidden; margin-bottom: 24px;">
+          <div style="padding: 14px 18px; border-bottom: 1px solid var(--slate-200); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: 600; font-size: 14px; margin-bottom: 2px;">○○ 브랜드 헤어드라이어 절연 불량 리콜</div>
+              <div style="font-size: 12px; color: var(--slate-500);">2024-03 · 사유: 절연저항 기준 미달로 감전 위험</div>
+            </div>
+            <a style="font-size: 12px; color: var(--primary); font-weight: 600;">원본 보기 →</a>
+          </div>
+          <div style="padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: 600; font-size: 14px; margin-bottom: 2px;">○○ 브랜드 미니 드라이어 과열 리콜</div>
+              <div style="font-size: 12px; color: var(--slate-500);">2023-09 · 사유: 온도 상승 시험 기준 초과</div>
+            </div>
+            <a style="font-size: 12px; color: var(--primary); font-weight: 600;">원본 보기 →</a>
+          </div>
+        </div>
+
+        <!-- 추론 로그 (접힘) -->
+        <div style="background: white; border: 1px solid var(--slate-200); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+            <div>
+              <div style="font-weight: 700; font-size: 14px; margin-bottom: 2px;">🔍 AI 추론 과정 자세히 보기</div>
+              <div style="font-size: 12px; color: var(--slate-500);">법령 검색 → 항목 매칭 → 신뢰도 산출까지 9단계</div>
+            </div>
+            <span style="color: var(--slate-400); font-size: 16px;">▾ 펼치기</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 면책 sticky bottom -->
+      <div style="background: var(--slate-900); color: var(--slate-300); padding: 14px 32px; font-size: 12px; text-align: center; border-top: 3px solid var(--amber-500);">
+        ⚠ <strong style="color: white;">본 진단 결과는 참고용이며 법적 효력이 없습니다.</strong> 실제 인증은 반드시 공인 시험기관 또는 법무·인증 전문가의 검토를 받으시기 바랍니다.
+      </div>
+
+    </div>
+  </div>
+
+  <div class="ux-notes">
+    <div class="ux-notes-title">UX 의사결정</div>
+    <ul>
+      <li>최상단 요약 카드 — 진단 ID/일시/제품 정보를 즉시 노출해 "무엇에 대한 결과인지" 즉시 명확.</li>
+      <li>인증을 카드로 분리 — 복수 인증 (헤어드라이어 = 안전확인 + EMC) 자연스럽게 표현.</li>
+      <li>카드 왼쪽 4px 컬러 바: 녹색=HIGH, 황색=MEDIUM, 빨강=LOW. 한 눈에 신뢰도 차등 인식.</li>
+      <li>각 인증 카드 안에 근거 법령 직접 인용 → 출처 투명성.</li>
+      <li>MEDIUM 카드에 "추가 입력하면 정확도 ↑" CTA — 모호함을 개선할 수 있는 경로 제시.</li>
+      <li>LOW 시 처리 방식을 별도 안내 박스로 명시. 실제 LOW 결과에서는 카드 자체가 빨갛게 바뀜 (F-05).</li>
+      <li>추론 로그는 기본 접힘 (F-06) — 일반 사용자에게 부담 X, 검증 시에만 펼침.</li>
+      <li>면책 문구 sticky bottom + 진한 색 대비 — 절대 못 놓치게 (F-04).</li>
+      <li>액션 버튼 (PDF·공유·새 진단)을 상단 우측에 — 결과 보고 바로 다음 행동으로.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SCREEN 6: 진단 이력 목록                                       -->
+<!-- ============================================================ -->
+<section class="section" id="screen-6">
+  <div class="section-header">
+    <span class="section-num">6</span>
+    <h2>진단 이력 목록</h2>
+  </div>
+  <div class="section-purpose">
+    <strong>목적:</strong> 로그인 사용자의 과거 진단 결과를 빠르게 스캔/재방문. 검색/필터로 많은 이력에도 대응.
+  </div>
+
+  <div class="screen">
+    <div class="browser-bar">
+      <div class="browser-dots"><span></span><span></span><span></span></div>
+      <div class="browser-url">https://kcpilot.com/assessments</div>
+    </div>
+    <div class="screen-body">
+
+      <header class="app-header">
+        <div class="app-logo">KCpilot</div>
+        <nav class="app-nav-links">
+          <span>새 진단</span>
+          <span class="active">내 이력</span>
+        </nav>
+        <div class="app-actions">
+          <span style="font-size: 13px; color: var(--slate-600);">hamin@example.com</span>
+          <div class="avatar">H</div>
+        </div>
+      </header>
+
+      <div style="padding: 32px; max-width: 1040px; margin: 0 auto;">
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h1 style="font-size: 26px; font-weight: 800; margin-bottom: 4px;">내 진단 이력</h1>
+            <p style="font-size: 13px; color: var(--slate-600);">총 <strong style="color: var(--slate-900);">14개</strong>의 진단 결과</p>
+          </div>
+          <button class="btn btn-primary">+ 새 진단 시작</button>
+        </div>
+
+        <div style="background: white; border: 1px solid var(--slate-200); border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <input class="form-input is-placeholder" style="flex: 1; min-width: 240px;" value="🔎 제품명으로 검색" readonly>
+          <select class="form-input" style="width: auto;">
+            <option>최신순</option>
+          </select>
+          <select class="form-input" style="width: auto;">
+            <option>전체 기간</option>
+          </select>
+          <button class="btn btn-secondary btn-sm">필터 초기화</button>
+        </div>
+
+        <div style="background: white; border: 1px solid var(--slate-200); border-radius: 10px; overflow: hidden;">
+
+          <div style="padding: 18px 22px; border-bottom: 1px solid var(--slate-200); display: flex; align-items: center; gap: 20px;">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span class="badge badge-gray">V1StGXR82aBc</span>
+                <span style="font-size: 12px; color: var(--slate-500);">2026-05-25 14:32</span>
+              </div>
+              <div style="font-weight: 700; font-size: 15px; margin-bottom: 6px;">가정용 휴대용 헤어드라이어</div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <span class="badge badge-green">안전확인 · HIGH</span>
+                <span class="badge badge-amber">KC EMC · MEDIUM</span>
+              </div>
+            </div>
+            <button class="btn btn-secondary btn-sm">상세 보기 →</button>
+          </div>
+
+          <div style="padding: 18px 22px; border-bottom: 1px solid var(--slate-200); display: flex; align-items: center; gap: 20px;">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span class="badge badge-gray">E5F6G7H8jKlM</span>
+                <span style="font-size: 12px; color: var(--slate-500);">2026-05-22 11:08</span>
+              </div>
+              <div style="font-weight: 700; font-size: 15px; margin-bottom: 6px;">유아용 LED 무드등</div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <span class="badge badge-green">어린이제품 안전인증 · HIGH</span>
+                <span class="badge badge-green">안전확인 · HIGH</span>
+                <span class="badge badge-amber">KC EMC · MEDIUM</span>
+              </div>
+            </div>
+            <button class="btn btn-secondary btn-sm">상세 보기 →</button>
+          </div>
+
+          <div style="padding: 18px 22px; border-bottom: 1px solid var(--slate-200); display: flex; align-items: center; gap: 20px;">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span class="badge badge-gray">J9K0L1M2nOpQ</span>
+                <span style="font-size: 12px; color: var(--slate-500);">2026-05-20 09:15</span>
+                <span class="badge badge-red">⚠ 전문가 상담 권장</span>
+              </div>
+              <div style="font-weight: 700; font-size: 15px; margin-bottom: 6px;">스마트 펫 급식기 (카메라 내장)</div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <span class="badge badge-green">안전확인 · HIGH</span>
+                <span class="badge badge-red">방송통신 적합성 · LOW</span>
+                <span class="badge badge-amber">KC EMC · MEDIUM</span>
+              </div>
+            </div>
+            <button class="btn btn-secondary btn-sm">상세 보기 →</button>
+          </div>
+
+          <div style="padding: 18px 22px; border-bottom: 1px solid var(--slate-200); display: flex; align-items: center; gap: 20px;">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span class="badge badge-gray">N3O4P5Q6rStU</span>
+                <span style="font-size: 12px; color: var(--slate-500);">2026-05-18 16:40</span>
+              </div>
+              <div style="font-weight: 700; font-size: 15px; margin-bottom: 6px;">무선 휴대용 보조배터리 10,000mAh</div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <span class="badge badge-green">안전확인 · HIGH</span>
+              </div>
+            </div>
+            <button class="btn btn-secondary btn-sm">상세 보기 →</button>
+          </div>
+
+          <div style="padding: 18px 22px; display: flex; align-items: center; gap: 20px; background: var(--slate-50);">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span class="badge badge-gray">R7S8T9U0vWxY</span>
+                <span style="font-size: 12px; color: var(--slate-500);">2026-05-18 16:38</span>
+                <span class="badge badge-blue">⟳ 진단 중</span>
+              </div>
+              <div style="font-weight: 700; font-size: 15px;">USB-C 충전 케이블 1.5m</div>
+              <div style="font-size: 12px; color: var(--slate-500); margin-top: 4px;">약 18초 남음</div>
+            </div>
+            <button class="btn btn-secondary btn-sm">대기 화면으로 →</button>
+          </div>
+
+        </div>
+
+        <div style="display: flex; justify-content: center; align-items: center; gap: 4px; margin-top: 24px;">
+          <button class="btn btn-secondary btn-sm">‹ 이전</button>
+          <button class="btn btn-primary btn-sm" style="min-width: 32px;">1</button>
+          <button class="btn btn-secondary btn-sm" style="min-width: 32px;">2</button>
+          <button class="btn btn-secondary btn-sm" style="min-width: 32px;">3</button>
+          <button class="btn btn-secondary btn-sm">다음 ›</button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <div class="ux-notes">
+    <div class="ux-notes-title">UX 의사결정</div>
+    <ul>
+      <li>카드 리스트 (테이블 X) — 모바일 대응 + 행이 두꺼워 인증 배지 여러 개 표시 가능.</li>
+      <li>각 행에 진단 ID, 일시, 제품명, 결과 인증 배지(컬러로 신뢰도까지) — 한 줄로 스캔 가능.</li>
+      <li>LOW 결과는 행 자체에 "전문가 상담 권장" 배지로 사전 경고.</li>
+      <li>진행 중인 진단도 같은 리스트에 표시 (다른 배경색) — 사용자가 헷갈리지 않게 같은 자리에서 추적.</li>
+      <li>검색 + 정렬 + 기간 필터. 많은 이력 가진 사용자 대비.</li>
+      <li>페이지네이션 (무한 스크롤 X) — "내가 봤던 그 진단 위치"가 안정적이어야 함.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SCREEN 7: 공통 레이아웃                                        -->
+<!-- ============================================================ -->
+<section class="section" id="screen-7">
+  <div class="section-header">
+    <span class="section-num">7</span>
+    <h2>공통 레이아웃 (Header / Footer)</h2>
+  </div>
+  <div class="section-purpose">
+    <strong>목적:</strong> 모든 페이지에 공통으로 들어가는 헤더·푸터 정의. 로그인 전/후 상태별 차이 명시.
+  </div>
+
+  <!-- 7-1 -->
+  <div style="margin-bottom: 28px;">
+    <div style="font-size: 13px; font-weight: 700; color: var(--slate-600); margin-bottom: 8px;">7-1. 로그인 전 헤더 (Public)</div>
+    <div class="screen">
+      <div class="browser-bar">
+        <div class="browser-dots"><span></span><span></span><span></span></div>
+        <div class="browser-url">로그인 전 — 랜딩, FAQ, 가이드 등</div>
+      </div>
+      <header class="app-header" style="border-bottom: 1px solid var(--slate-200);">
+        <div class="app-logo">KCpilot</div>
+        <nav class="app-nav-links">
+          <span>서비스 소개</span>
+          <span>이용 가이드</span>
+          <span>자주 묻는 질문</span>
+        </nav>
+        <div class="app-actions">
+          <button class="btn btn-ghost">로그인</button>
+          <button class="btn btn-primary">회원가입</button>
+        </div>
+      </header>
+      <div style="padding: 18px 28px; font-size: 12px; color: var(--slate-500); background: var(--slate-50); border-top: 1px dashed var(--slate-200);">
+        구성: <strong>로고</strong> · <strong>가운데 네비게이션</strong> (서비스 소개 / 가이드 / FAQ) · <strong>오른쪽 인증 액션</strong> (로그인 ghost · 회원가입 primary)
+      </div>
+    </div>
+  </div>
+
+  <!-- 7-2 -->
+  <div style="margin-bottom: 28px;">
+    <div style="font-size: 13px; font-weight: 700; color: var(--slate-600); margin-bottom: 8px;">7-2. 로그인 후 헤더 (Authenticated)</div>
+    <div class="screen">
+      <div class="browser-bar">
+        <div class="browser-dots"><span></span><span></span><span></span></div>
+        <div class="browser-url">로그인 후 — 진단 입력 / 대기 / 결과 / 이력</div>
+      </div>
+      <header class="app-header" style="border-bottom: 1px solid var(--slate-200);">
+        <div class="app-logo">KCpilot</div>
+        <nav class="app-nav-links">
+          <span class="active">새 진단</span>
+          <span>내 이력</span>
+        </nav>
+        <div class="app-actions">
+          <span style="font-size: 13px; color: var(--slate-600);">hamin@example.com</span>
+          <div class="avatar">H</div>
+          <span style="color: var(--slate-400); font-size: 13px;">▾</span>
+        </div>
+      </header>
+      <div style="padding: 18px 28px; font-size: 12px; color: var(--slate-500); background: var(--slate-50); border-top: 1px dashed var(--slate-200);">
+        구성: <strong>로고</strong> · <strong>가운데 메인 네비게이션</strong> (새 진단 / 내 이력 · 현재 위치는 파란색 강조) · <strong>오른쪽 사용자 메뉴</strong> (이메일 + 아바타 + 드롭다운). 드롭다운에는 [계정 설정 / 로그아웃].
+      </div>
+    </div>
+  </div>
+
+  <!-- 7-3 -->
+  <div>
+    <div style="font-size: 13px; font-weight: 700; color: var(--slate-600); margin-bottom: 8px;">7-3. 공통 푸터 (모든 페이지)</div>
+    <div class="screen">
+      <div class="browser-bar">
+        <div class="browser-dots"><span></span><span></span><span></span></div>
+        <div class="browser-url">모든 페이지 — 항상 동일</div>
+      </div>
+      <footer style="background: #0a0f1a; padding: 28px 32px; color: var(--slate-400); font-size: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; max-width: 1100px; margin: 0 auto; gap: 24px;">
+          <div>
+            <div style="color: white; font-weight: 800; margin-bottom: 6px;">KCpilot</div>
+            <div style="line-height: 1.6;">본 서비스는 참고용이며 법적 효력이 없습니다.<br>최종 인증은 공인기관 확인이 필요합니다.</div>
+          </div>
+          <div style="display: flex; gap: 22px;">
+            <span>이용약관</span>
+            <span>개인정보처리방침</span>
+            <span>문의하기</span>
+          </div>
+        </div>
+      </footer>
+      <div style="padding: 18px 28px; font-size: 12px; color: var(--slate-500); background: var(--slate-50); border-top: 1px dashed var(--slate-200);">
+        구성: <strong>왼쪽</strong> 로고 + 면책 문구 / <strong>오른쪽</strong> 약관·정책·문의 링크. <strong>면책 문구는 모든 페이지에 노출</strong> (F-04 요구사항).
+      </div>
+    </div>
+  </div>
+
+  <div class="ux-notes">
+    <div class="ux-notes-title">UX 의사결정</div>
+    <ul>
+      <li>헤더는 로그인 상태에 따라 두 버전. 로그인 전엔 마케팅 네비, 로그인 후엔 기능 네비.</li>
+      <li>현재 페이지를 네비 메뉴에서 파란색으로 강조 — 사용자가 자기 위치를 인지.</li>
+      <li>로고 클릭 시: 로그인 전 → 랜딩, 로그인 후 → 새 진단 페이지로 이동.</li>
+      <li>푸터의 면책 문구는 진단 결과 화면에선 sticky로 한 번 더 강조 (Screen 5 참조).</li>
+      <li>고객 문의는 푸터의 "문의하기"로 단일화 (별도 메뉴 없음). MVP는 이메일 폼.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+</body>
+</html>
