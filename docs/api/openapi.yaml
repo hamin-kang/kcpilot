@@ -208,6 +208,49 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [Users]
+      operationId: deleteCurrentUser
+      summary: 회원 탈퇴 (익명화)
+      description: |
+        현재 로그인된 사용자를 탈퇴 처리한다.
+
+        **익명화 정책 (개인정보보호법·GDPR 대응):**
+        - `users` 행의 개인정보 컬럼(email, password_hash, display_name) 마스킹·삭제
+        - `users.deleted_at` 세팅 (soft delete)
+        - 자식 데이터의 `user_id` FK는 `SET NULL` 처리 (assessments, spec_sheet_files)
+        - 진단 데이터 자체는 `user_id=NULL`로 보존하여 통계·분석에 활용
+        - 모든 refresh token 즉시 무효화
+
+        탈퇴 후 동일 이메일로 재가입은 가능하나, 과거 진단 데이터는 복구되지 않는다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountDeletionRequest'
+            example:
+              password: Pa$$w0rd!
+      responses:
+        '204':
+          description: 탈퇴 처리 성공
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: 인증 실패 또는 비밀번호 불일치
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: '2026-05-22T10:30:00Z'
+                status: 401
+                code: INVALID_CREDENTIALS
+                message: 비밀번호가 일치하지 않습니다.
+                path: /api/v1/users/me
+                requestId: req-del001
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /assessments:
     post:
@@ -395,7 +438,7 @@ paths:
       description: |
         LangGraph 워크플로우의 단계별 추론 로그를 반환한다.
         F-06 단계별 추론 로그 표시 기능에 사용된다.
-        진단이 RUNNING 상태인 동안에도 부분적으로 채워진 steps를 반환할 수 있다.
+        진단이 PROCESSING 상태인 동안에도 부분적으로 채워진 steps를 반환할 수 있다.
       responses:
         '200':
           description: 추론 로그 조회 성공
@@ -439,7 +482,7 @@ paths:
                   - stepNumber: 6
                     stepName: SELF_CRITIQUE
                     description: 자기비판 노드 검증
-                    output: 1차 결론 유효 (신뢰도 HIGH)
+                    output: 1차 결론 유효 (모든 인증 confidence HIGH)
                     timestamp: '2026-05-22T10:30:45Z'
                     durationMs: 9800
         '401':
@@ -608,7 +651,7 @@ components:
             status: 403
             code: FORBIDDEN
             message: 해당 리소스에 접근할 권한이 없습니다.
-            path: /api/v1/assessments/100
+            path: /api/v1/assessments/V1StGXR82aBc
             requestId: req-vwx234
     NotFound:
       description: 리소스를 찾을 수 없음
@@ -621,7 +664,7 @@ components:
             status: 404
             code: NOT_FOUND
             message: 요청한 리소스를 찾을 수 없습니다.
-            path: /api/v1/assessments/9999
+            path: /api/v1/assessments/Zz9YxW8vU7tS
             requestId: req-yz0123
     InternalServerError:
       description: 서버 내부 오류
@@ -736,6 +779,16 @@ components:
           minLength: 8
           maxLength: 64
 
+    AccountDeletionRequest:
+      type: object
+      required: [password]
+      properties:
+        password:
+          type: string
+          minLength: 8
+          maxLength: 64
+          description: 본인 확인용 현재 비밀번호 재입력
+
     TokenRefreshRequest:
       type: object
       required: [refreshToken]
@@ -810,10 +863,10 @@ components:
     # ===== Assessments — Enum =====
     AssessmentStatus:
       type: string
-      enum: [PENDING, RUNNING, COMPLETED, FAILED]
+      enum: [PENDING, PROCESSING, COMPLETED, FAILED]
       description: |
-        * `PENDING` — 진단 큐 진입, 아직 실행 전
-        * `RUNNING` — LangGraph 워크플로우 실행 중
+        * `PENDING` — 진단 큐 진입, 아직 처리 전
+        * `PROCESSING` — LangGraph 워크플로우 처리 중
         * `COMPLETED` — 진단 완료, result 필드 채워짐
         * `FAILED` — 진단 실패, failureReason 필드 채워짐
 
@@ -1007,7 +1060,11 @@ components:
             $ref: '#/components/schemas/LegalSource'
         ambiguityNote:
           type: string
-          description: 모호 케이스에 대한 추가 안내 (F-05). 있을 때만.
+          description: |
+            모호 케이스에 대한 AI 생성 추가 안내문 (F-05). 있을 때만.
+            예: "이 제품은 통제번호 X의 일부 기준에 근접하나 ○○ 조항과 중첩되어 확신하기 어렵습니다. KTL 직접 문의를 권장합니다."
+
+            **"전문가 상담 권장" 배지와는 별개.** 해당 배지는 `applicableCertifications` 중 `confidence: LOW`가 1개 이상 있을 때 클라이언트가 동적으로 표시한다 (별도 필드 없음, requirements.md §F-04 참조).
         dataReferenceDate:
           type: string
           format: date
