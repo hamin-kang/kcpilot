@@ -4,33 +4,34 @@
 
 ## 스택
 
-- **FastAPI 0.115** + **Uvicorn**
-- **Python 3.11** (`.python-version` 명시)
-- **LangChain 1.3** / **LangGraph 1.2** / **langchain-openai** 1.2
-- **OpenAI** SDK 2.37
+- **FastAPI** + **Uvicorn**
+- **Python 3.11** (`.python-version` 명시, uv 관리)
+- **LangChain** / **LangGraph** / **langchain-openai**
+- **OpenAI** SDK
 - **PDF 처리**: pdfminer.six, pdfplumber, pypdfium2, pillow
 - **벡터 검색**: PostgreSQL + **pgvector** (LangChain의 `langchain-postgres` PGVector 래퍼 사용, DB 접속은 `psycopg[binary]`)
 - **토큰 계산**: tiktoken
-- **pytest** (테스트)
+- **pytest** (테스트, dev 의존성)
 
 벡터 저장소는 backend가 쓰는 PostgreSQL과 **동일 인스턴스를 공유**한다 (포트 5432, DB `kcpilot`). 컨테이너는 루트 `docker-compose.yaml`로 띄운다.
 
-## 가상환경
+## 패키지 관리 (uv)
 
-`.venv/` 디렉토리에 가상환경이 이미 만들어져 있다. 활성화 후 작업:
-
-```bash
-source .venv/bin/activate                       # 활성화 (macOS/Linux)
-pip install -r requirements.txt                 # 의존성 설치/동기화
-deactivate                                      # 비활성화
-```
-
-새 패키지 추가 시:
+이 프로젝트는 **uv**로 관리된다. `pyproject.toml`에 의존성 정의, `uv.lock`으로 버전 고정.
 
 ```bash
-pip install <package>
-pip freeze > requirements.txt                   # requirements.txt 갱신
+# 처음 클론 후 환경 세팅 (한 번만)
+uv sync                          # .venv 생성 + 의존성 설치 (dev 포함)
+uv sync --no-dev                 # dev 의존성 제외
+
+# 패키지 추가/제거
+uv add <package>                 # 프로덕션 의존성 추가
+uv add --dev <package>           # 개발 의존성 추가
+uv remove <package>              # 패키지 제거
 ```
+
+`uv.lock`은 git에 커밋한다 (package-lock.json과 같은 역할).  
+`.venv/`는 gitignore 처리 — `uv sync`로 언제든 재생성 가능.
 
 ## 환경변수 (.env)
 
@@ -41,21 +42,23 @@ OPENAI_API_KEY=sk-...
 DATABASE_URL=postgresql+psycopg://hamin:1234@localhost:5432/kcpilot
 ```
 
-`.env`는 절대 커밋하지 말 것 (`.gitignore` 확인 필요).
+`.env`는 절대 커밋하지 말 것 (`.gitignore` 처리됨).
 
 ## 개발 명령어
 
 ```bash
-uvicorn main:app --reload                       # 개발 서버 (포트 8000, 자동 리로드)
-uvicorn main:app --host 0.0.0.0 --port 8000     # 외부 접속 허용
+uv run uvicorn main:app --reload                       # 개발 서버 (포트 8000)
+uv run uvicorn main:app --host 0.0.0.0 --port 8000    # 외부 접속 허용
 
-pytest                                          # 전체 테스트
-pytest --ignore=.venv                           # CI와 동일 (가상환경 제외)
-pytest tests/test_smoke.py                      # 단일 파일
-pytest tests/test_smoke.py::test_name           # 단일 테스트 함수
-pytest -v                                       # 상세 출력
-pytest -k "패턴"                                # 이름 패턴 매칭
+uv run pytest                                          # 전체 테스트
+uv run pytest tests/test_smoke.py                      # 단일 파일
+uv run pytest tests/test_smoke.py::test_name           # 단일 테스트 함수
+uv run pytest -v                                       # 상세 출력
+uv run pytest -k "패턴"                                # 이름 패턴 매칭
 ```
+
+`uv run`은 `.venv`를 자동으로 인식하므로 `source .venv/bin/activate` 불필요.  
+직접 활성화하고 싶다면: `source .venv/bin/activate`
 
 ## 자동 생성 문서
 
