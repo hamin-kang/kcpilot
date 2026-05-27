@@ -299,9 +299,9 @@ KATS는 시험기관이 아니라 제도 관리 기관(정부).
 ### 5.2 AI 서비스
 
 - 언어: Python 3.11.15
-- 프레임워크: FastAPI 0.115.12 + Uvicorn 0.34.3
-- AI 프레임워크: LangChain 1.3.1 + LangGraph 1.2.0
-- LLM 연동: langchain-openai 1.2.1, OpenAI SDK 2.37.0
+- 프레임워크: FastAPI 0.136.3 + Uvicorn 0.48.0
+- AI 프레임워크: LangChain 1.3.2 + LangGraph 1.2.2
+- LLM 연동: langchain-openai 1.2.2, OpenAI SDK 2.38.0
 - VectorDB: PostgreSQL + pgvector (backend와 동일 DB 인스턴스 공유, `langchain-postgres` PGVector 래퍼 사용)
 - 임베딩 모델: bge-m3 (로컬) 또는 OpenAI text-embedding-3-small
 - LLM: OpenAI GPT-4o 또는 Anthropic Claude API

@@ -74,15 +74,15 @@ jobs:
       - name: 코드 체크아웃
         uses: actions/checkout@v4
 
-      - name: Python 설정
-        uses: actions/setup-python@v5
+      - name: uv 설치
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: '3.11'
+          enable-cache: true
 
       - name: 의존성 설치
         working-directory: ai-service
-        run: pip install -r requirements.txt
+        run: uv sync
 
       - name: 테스트
         working-directory: ai-service
-        run: pytest --ignore=.venv
+        run: uv run pytest

@@ -58,13 +58,18 @@ npm test -- path/to/file.test.tsx              # 단일 테스트 파일
 
 ### AI Service (FastAPI)
 
+패키지 관리는 **uv**를 사용한다. `pyproject.toml` + `uv.lock` 구조.
+
 ```bash
 cd ai-service
-source .venv/bin/activate                      # 가상환경 활성화
-pip install -r requirements.txt
-uvicorn main:app --reload                      # 개발 서버 (기본 8000)
-pytest                                         # 전체 테스트
-pytest tests/test_xxx.py::test_func            # 단일 테스트
+uv sync                                        # 처음 클론 후 .venv 생성 + 의존성 설치
+uv run uvicorn main:app --reload               # 개발 서버 (기본 8000)
+uv run pytest                                  # 전체 테스트
+uv run pytest tests/test_xxx.py::test_func     # 단일 테스트
+
+# 패키지 추가 시
+uv add <package>                               # 프로덕션 의존성
+uv add --dev <package>                         # 개발 의존성
 ```
 
 `.env` 파일에서 OpenAI 키 등을 로드한다 (`load_dotenv()`).
