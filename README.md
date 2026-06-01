@@ -92,10 +92,14 @@ flowchart TB
 > 사전 요구사항: **Docker**, **JDK 21**, **Node.js 22**, **[uv](https://docs.astral.sh/uv/)** _(Python 3.11은 uv가 자동 설치)_
 
 ```bash
-# 1. 클론 & 환경변수
+# 1. 클론 & 환경변수 파일 생성
 git clone <repository-url> && cd kcpilot
-cp .env.example .env                          # PostgreSQL 자격증명
-cp ai-service/.env.example ai-service/.env    # OpenAI 키 등
+cp .env.example .env
+cp ai-service/.env.example ai-service/.env
+cp backend/src/main/resources/application-local.yaml.example \
+   backend/src/main/resources/application-local.yaml
+
+# ↑ 생성된 파일 3개를 각자 환경에 맞게 편집한 뒤 진행
 
 # 2. DB 기동 (PostgreSQL + pgvector)
 docker-compose up -d
@@ -113,7 +117,8 @@ cd frontend   && npm install && npm run dev                   # :3000
 
 ### 환경변수
 
-- **루트 `.env`** — `POSTGRES_USER` / `POSTGRES_PASSWORD`. backend [application.yaml](backend/src/main/resources/application.yaml)의 datasource와 일치해야 한다 (기본값 `hamin` / `1234`).
+- **루트 `.env`** — `POSTGRES_USER` / `POSTGRES_PASSWORD`. docker-compose가 이 값으로 PostgreSQL 컨테이너를 생성한다.
+- **`backend/.../application-local.yaml`** — Spring Boot 로컬 DB 연결 설정. `.env`의 `POSTGRES_USER` / `POSTGRES_PASSWORD`와 반드시 일치해야 한다.
 - **`ai-service/.env`** — `OPENAI_API_KEY`. (현재 OpenAI 연동 전이라 비워둬도 서버는 실행된다)
 
 ### Docker
@@ -127,12 +132,14 @@ docker-compose down -v    # 볼륨까지 제거 (init 스크립트 재실행 시
 
 ### 기본 자격증명 (개발용)
 
+`.env`와 `application-local.yaml.example`에 설정된 기본값이다.
+
 | 대상 | 사용자 | 비밀번호 |
 |------|--------|----------|
 | PostgreSQL (DB: `kcpilot`) | `hamin` | `1234` |
 | backend (Spring Security) | `admin` | `admin` |
 
-> ⚠️ 전부 개발용 하드코딩이다. 프로덕션에서는 환경변수로 분리해야 한다.
+> ⚠️ 로컬 개발 전용이다. 두 파일 모두 gitignore되어 있어 저장소에 올라가지 않는다.
 
 ### 테스트
 

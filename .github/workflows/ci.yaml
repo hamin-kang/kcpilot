@@ -8,21 +8,6 @@ jobs:
   backend:
     runs-on: ubuntu-24.04
 
-    services:
-      postgres:
-        image: pgvector/pgvector:0.8.2-pg18
-        env:
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: 코드 체크아웃
         uses: actions/checkout@v4
