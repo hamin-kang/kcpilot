@@ -4,14 +4,14 @@
 
 ## 스택
 
-- **Spring Boot 3.5.14** + **Java 21** (toolchain으로 강제)
+- **Spring Boot 3.5** + **Java 21** (toolchain으로 강제)
 - **Gradle Kotlin DSL** (`build.gradle.kts`)
 - **JPA + Hibernate** (PostgreSQL dialect)
 - **PostgreSQL 18** + **pgvector 0.8.2** (벡터 검색은 ai-service에서 주도, backend는 RDBMS 접근만 담당)
 - **Spring Security**
 - **Spring Validation**
 - **Lombok** (annotation processor)
-- **springdoc-openapi** 2.8.17 → Swagger UI 자동 생성
+- **springdoc-openapi** 2.8 → Swagger UI 자동 생성
 
 ## 패키지 구조
 

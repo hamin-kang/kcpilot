@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 KCpilot은 KC 인증 사전진단 AI 서비스로, 3개 서비스로 구성된 모노레포다.
 
-- **backend/** — Spring Boot 3.5.14 (Java 21), PostgreSQL, JPA, Spring Security, springdoc-openapi
+- **backend/** — Spring Boot 3.5 (Java 21), PostgreSQL, JPA, Spring Security, springdoc-openapi
 - **frontend/** — Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, Jest
 - **ai-service/** — FastAPI, Python 3.11, LangChain/LangGraph, OpenAI, pgvector
 
@@ -30,49 +30,10 @@ docker-compose down
 
 `application.yaml`의 datasource 자격증명(`hamin`/`1234`)은 `docker-compose.yaml` 환경변수와 일치해야 한다.
 
-## 자주 쓰는 명령어
+## 명령어
 
-### Backend (Spring Boot)
-
-```bash
-cd backend
-./gradlew bootRun                              # 개발 서버 실행 (포트 8080)
-./gradlew build                                # 빌드 + 테스트
-./gradlew test                                 # 전체 테스트
-./gradlew test --tests "BackendApplicationTests"  # 단일 테스트 클래스
-./gradlew test --tests "*.someMethod"          # 단일 테스트 메서드
-```
-
-JPA는 `ddl-auto: update` 설정이라 엔티티 변경 시 자동으로 스키마 반영됨.
-
-### Frontend (Next.js)
-
-```bash
-cd frontend
-npm run dev                                    # 개발 서버
-npm run build                                  # 프로덕션 빌드
-npm run lint                                   # ESLint
-npm test                                       # Jest 전체
-npm test -- path/to/file.test.tsx              # 단일 테스트 파일
-```
-
-### AI Service (FastAPI)
-
-패키지 관리는 **uv**를 사용한다. `pyproject.toml` + `uv.lock` 구조.
-
-```bash
-cd ai-service
-uv sync                                        # 처음 클론 후 .venv 생성 + 의존성 설치
-uv run uvicorn main:app --reload               # 개발 서버 (기본 8000)
-uv run pytest                                  # 전체 테스트
-uv run pytest tests/test_xxx.py::test_func     # 단일 테스트
-
-# 패키지 추가 시
-uv add <package>                               # 프로덕션 의존성
-uv add --dev <package>                         # 개발 의존성
-```
-
-`.env` 파일에서 OpenAI 키 등을 로드한다 (`load_dotenv()`).
+- **설치·실행 전체** → [README.md](README.md)가 SSOT (사전 요구사항 · `.env` 설정 · 서비스 기동 순서)
+- **서비스별 상세 명령 · 작업 규칙** → 각 디렉토리의 CLAUDE.md: [backend](backend/CLAUDE.md) · [frontend](frontend/CLAUDE.md) · [ai-service](ai-service/CLAUDE.md)
 
 ## Git 워크플로우
 
@@ -84,7 +45,7 @@ uv add --dev <package>                         # 개발 의존성
 - `hotfix`만 `main`에서 분기, `main` + `develop` 양쪽으로 merge commit
 - `main`/`develop` 직접 push 금지, PR + CI 통과 필수
 
-CI는 PR 시 backend(`./gradlew build`), frontend(`build`/`lint`/`test`), ai-service(`pytest`) 모두 실행한다 (`.github/workflows/ci.yml`).
+CI는 PR 시 backend(`./gradlew build`), frontend(`build`/`lint`/`test`), ai-service(`pytest`) 모두 실행한다 (`.github/workflows/ci.yaml`).
 
 ## 커스텀 슬래시 커맨드
 
@@ -99,4 +60,4 @@ CI는 PR 시 backend(`./gradlew build`), frontend(`build`/`lint`/`test`), ai-ser
 
 - `application.yaml`의 DB 비밀번호와 admin 자격증명은 개발용 하드코딩 상태다. 프로덕션 설정 시 환경변수로 분리 필요.
 - backend의 JPA `ddl-auto: update`는 개발 편의용이며 프로덕션에서는 `validate` 또는 마이그레이션 도구로 전환해야 한다.
-- ai-service의 `/ai/run-assessment`는 현재 `not_implemented` 상태. LangGraph 워크플로우 연결이 다음 작업.
+- ai-service의 LangGraph 워크플로우 연결(`/ai/run-assessment`)이 다음 핵심 작업이다.

@@ -33,6 +33,8 @@ uv remove <package>              # 패키지 제거
 `uv.lock`은 git에 커밋한다 (package-lock.json과 같은 역할).  
 `.venv/`는 gitignore 처리 — `uv sync`로 언제든 재생성 가능.
 
+**로컬은 `uv sync`** (lock 자동 갱신 허용), **CI는 `uv sync --locked`** — lock이 `pyproject.toml`과 어긋나면 빌드를 실패시켜 stale lock을 잡는다. CI에서 `--frozen`이나 uv 버전 정확 핀은 쓰지 않는다: 재현성은 `uv.lock`이 담당하고, 버전 핀은 자동 갱신 봇(Renovate/Dependabot) 없이는 부채가 되기 때문.
+
 ## 환경변수 (.env)
 
 `main.py`가 `load_dotenv()`를 호출해 `.env`에서 환경변수를 읽는다. **현재 `.env` 파일은 비어 있다**. OpenAI 호출이 필요한 코드를 추가하려면 `OPENAI_API_KEY`를, pgvector 접속에는 `DATABASE_URL`을 먼저 설정해야 한다.
