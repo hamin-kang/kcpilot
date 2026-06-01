@@ -1,0 +1,23 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/kcpilot
+    username: your_db_user       # .env의 POSTGRES_USER와 일치해야 함
+    password: your_db_password   # .env의 POSTGRES_PASSWORD와 일치해야 함
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: true
+
+  security:
+    user:
+      name: admin
+      password: admin
+
+logging:
+  level:
+    com.kcpilot: DEBUG
+    org.hibernate.SQL: DEBUG

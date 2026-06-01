@@ -35,3 +35,7 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Spring profiles ###
+src/main/resources/application-local.yaml
+src/main/resources/application-prod.yaml

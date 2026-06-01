@@ -3,29 +3,12 @@ spring:
     name: backend
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/kcpilot
-    username: hamin
-    password: 1234
     driver-class-name: org.postgresql.Driver
 
   jpa:
-    hibernate:
-      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
-    show-sql: true
-
-  security:
-    user:
-      name: admin
-      password: admin
 
 server:
   port: 8080
-
-logging:
-  level:
-    com.kcpilot: DEBUG
-    org.hibernate.SQL: DEBUG
