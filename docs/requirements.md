@@ -289,31 +289,31 @@ KATS는 시험기관이 아니라 제도 관리 기관(정부).
 ### 5.1 백엔드
 
 - 언어: Java 21
-- 프레임워크: Spring Boot 3.5.14
+- 프레임워크: Spring Boot 3.5
 - ORM: JPA (Hibernate)
 - DB: PostgreSQL 18 (pgvector 0.8.2 확장 포함)
-- API 문서: springdoc-openapi 2.8.17 (Swagger UI 자동 생성)
+- API 문서: springdoc-openapi 2.8 (Swagger UI 자동 생성)
 - 인증: Spring Security + JWT
 - 배포: Docker
 
 ### 5.2 AI 서비스
 
-- 언어: Python 3.11.15
-- 프레임워크: FastAPI 0.136.3 + Uvicorn 0.48.0
-- AI 프레임워크: LangChain 1.3.2 + LangGraph 1.2.2
-- LLM 연동: langchain-openai 1.2.2, OpenAI SDK 2.38.0
+- 언어: Python 3.11
+- 프레임워크: FastAPI 0.136 + Uvicorn 0.48
+- AI 프레임워크: LangChain 1.3 + LangGraph 1.2
+- LLM 연동: langchain-openai 1.2, OpenAI SDK 2.38
 - VectorDB: PostgreSQL + pgvector (backend와 동일 DB 인스턴스 공유, `langchain-postgres` PGVector 래퍼 사용)
 - 임베딩 모델: bge-m3 (로컬) 또는 OpenAI text-embedding-3-small
 - LLM: OpenAI GPT-4o 또는 Anthropic Claude API
-- PDF 파싱: pdfplumber 0.11.9
-- 토큰 계산: tiktoken 0.13.0
+- PDF 파싱: pdfplumber 0.11
+- 토큰 계산: tiktoken 0.13
 
 ### 5.3 프론트엔드
 
-- 프레임워크: Next.js 15.5.18 (App Router) + React 19.2.6
+- 프레임워크: Next.js 15.5 (App Router) + React 19.2
 - 언어: TypeScript 5.x
-- 스타일링: Tailwind CSS 3.4.1
-- 테스트: Jest 30.4.2 + @testing-library/react 16.3.2
+- 스타일링: Tailwind CSS 3.4
+- 테스트: Jest 30.4 + @testing-library/react 16.3
 
 ### 5.4 인프라
 

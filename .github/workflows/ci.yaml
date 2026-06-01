@@ -81,7 +81,7 @@ jobs:
 
       - name: 의존성 설치
         working-directory: ai-service
-        run: uv sync
+        run: uv sync --locked
 
       - name: 테스트
         working-directory: ai-service
