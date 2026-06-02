@@ -27,7 +27,7 @@ public class AiServiceClient {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
-    public AiServiceClient(@Value("${ai-service.base-url}") String baseUrl, ObjectMapper objectMapper) {
+    public AiServiceClient(@Value("${ai-service.base-url:http://localhost:8000}") String baseUrl, ObjectMapper objectMapper) {
         this.baseUrl = baseUrl;
         this.objectMapper = objectMapper;
 
