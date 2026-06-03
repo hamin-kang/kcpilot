@@ -2,7 +2,9 @@
 
 > **KC 인증 사전진단 AI 서비스** — 제품 정보를 자연어로 입력하면 *어떤 KC 인증이 필요한지* 30초 안에 법령 근거와 함께 리포트로 정리해준다.
 
-> 🎥 **데모** — _시연 화면/GIF 추가 예정_
+> 🎥 **데모**
+
+![KCpilot 시연 — 헤어드라이어 진단](docs/demo.gif)
 
 ---
 
@@ -79,7 +81,7 @@ flowchart TB
 |------|------|
 | **Frontend** | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS |
 | **Backend** | Spring Boot 3.5 (Java 21), JPA, Spring Security + JWT |
-| **AI** | FastAPI (Python 3.11), LangChain / LangGraph, OpenAI |
+| **AI** | FastAPI (Python 3.11), LangChain / LangGraph, Google Gemini |
 | **Data** | PostgreSQL 18 + pgvector (RAG 임베딩 검색) |
 | **Infra** | Docker Compose |
 
@@ -102,7 +104,8 @@ docker-compose up -d
 
 # 3. 세 서비스 실행 (각각 별도 터미널)
 cd backend    && ./gradlew bootRun                            # :8080
-cd ai-service && uv sync && uv run uvicorn main:app --reload  # :8000
+cd ai-service && uv sync && uv run python ingest.py          # 최초 1회: 법령·리콜 데이터 pgvector 적재
+cd ai-service && uv run uvicorn main:app --reload             # :8000
 cd frontend   && npm install && npm run dev                   # :3000
 ```
 
@@ -115,7 +118,7 @@ cd frontend   && npm install && npm run dev                   # :3000
 
 - **루트 `.env`** — `POSTGRES_USER` / `POSTGRES_PASSWORD`. docker-compose가 이 값으로 PostgreSQL 컨테이너를 생성한다.
 - **`backend/.../application-local.yaml`** — Spring Boot 로컬 DB 연결 설정. `.env`의 `POSTGRES_USER` / `POSTGRES_PASSWORD`와 반드시 일치해야 한다.
-- **`ai-service/.env`** — `OPENAI_API_KEY`. (현재 OpenAI 연동 전이라 비워둬도 서버는 실행된다)
+- **`ai-service/.env`** — `GOOGLE_API_KEY` (Gemini 호출용)와 `DATABASE_URL`. RAG 검색·진단에 필수다.
 
 ### Docker
 
@@ -149,10 +152,14 @@ cd ai-service && uv run pytest      # ai-service
 
 ## 📍 현재 상태
 
-초기 스캐폴드 단계다.
+**Walking skeleton 동작** — frontend → backend → ai-service → pgvector를 관통하는 진단 흐름이 end-to-end로 동작한다. 대표 시나리오(헤어드라이어 220V·1200W·가정용)가 입력부터 결과까지 검증됐다: **안전인증 + 전자파 적합등록 동시 식별**, 시험항목·시험기관(KTL 등) 추천, 유사 리콜 3건 (위 시연 참고).
 
-- backend ↔ ai-service 연동 미구현 (ai-service의 `POST /ai/run-assessment`는 placeholder)
-- frontend는 초기 App Router 스캐폴드
+다음 단계 — 의도적으로 범위에서 제외한 후속 작업:
+
+- 시나리오 확장 (어린이 전자완구·산업용 IoT 등)
+- 리콜 데이터 실 API 연동 (현재 샘플 데이터)
+- 신뢰도 임계값 정답셋 보정 ([requirements.md](docs/requirements.md) §4.2.1 — Phase 3)
+- 운영용 인증·인가 설계 (현재 개발용 permitAll)
 
 ## 📚 더 보기
 
