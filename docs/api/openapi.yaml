@@ -877,8 +877,8 @@ components:
         인증별 신뢰도 라벨. **각 ApplicableCertification에 부여**되며 진단(assessment) 단위에는 부여하지 않는다.
 
         산출 로직 (requirements.md §4.2.1):
-        * `confidenceScore = MIN(ragSimilarityScore, llmSelfCritiqueScore)` (각각 0.0~1.0)
-        * 임계값: `>= 0.85 → HIGH`, `>= 0.65 → MEDIUM`, 그 외 `LOW`
+        * 검색 관련성(`ragScore`, cosine)은 게이트로만, 근거 충실성(`llmScore`)이 신뢰도 주축 (기존 MIN 방식 폐기)
+        * 임계값: `>= 0.85 → HIGH`, `>= 0.65 → MEDIUM`, 그 외 `LOW` (정답셋 보정 전 잠정값)
         * 백분율 점수는 DB에만 저장하고 응답에는 라벨만 노출 (거짓 정밀성 회피)
 
         의미:
@@ -1102,7 +1102,7 @@ components:
           $ref: '#/components/schemas/ConfidenceLevel'
           description: |
             이 인증의 적용 여부에 대한 신뢰도 라벨.
-            산출 로직은 requirements.md §4.2.1 참조 (Hybrid: RAG similarity + LLM self-critique, MIN 결합).
+            산출 로직은 requirements.md §4.2.1 참조 (검색 관련성=게이트, 근거 충실성=주축).
             백분율 점수(confidenceScore)는 DB에 저장하되 응답에는 노출하지 않는다.
 
     TestItem:

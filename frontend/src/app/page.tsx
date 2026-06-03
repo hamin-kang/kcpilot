@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type {
   AssessmentRequest,
   AssessmentResult,
@@ -117,9 +117,15 @@ export default function Home() {
           <button
             type="submit"
             disabled={loading}
-            className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+            className="flex items-center gap-2 rounded bg-black px-4 py-2 text-white disabled:opacity-60"
           >
-            {loading ? "진단 중… (15~30초)" : "진단하기"}
+            {loading && (
+              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              </svg>
+            )}
+            {loading ? "진단 중…" : "진단하기"}
           </button>
           <button
             type="button"
@@ -137,8 +143,60 @@ export default function Home() {
         </div>
       )}
 
+      {loading && <LoadingView />}
       {result && <ResultView result={result} />}
     </main>
+  );
+}
+
+const STEPS = [
+  { label: "카테고리 분류", desc: "제품 유형 파악" },
+  { label: "법령 검색 (RAG)", desc: "pgvector에서 관련 법령 검색" },
+  { label: "인증 식별", desc: "시험항목·기관 도출" },
+  { label: "리콜 사례 검색", desc: "유사 사고 이력 조회" },
+  { label: "자기비판 검증", desc: "근거 충실성 재검토" },
+];
+
+function LoadingView() {
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setActive((p) => Math.min(p + 1, STEPS.length - 1)), 6000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div className="mt-8 rounded-lg border p-6">
+      <div className="mb-5 flex items-center gap-3">
+        <svg className="h-5 w-5 animate-spin text-gray-500" viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+        </svg>
+        <span className="font-semibold">AI 진단 중 — LangGraph 워크플로우 실행</span>
+      </div>
+      <ol className="space-y-3">
+        {STEPS.map((step, i) => (
+          <li key={i} className="flex items-start gap-3">
+            <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold
+              ${i < active ? "bg-green-500 text-white"
+              : i === active ? "bg-black text-white"
+              : "bg-gray-100 text-gray-400"}`}>
+              {i < active ? "✓" : i + 1}
+            </span>
+            <div>
+              <p className={`text-sm font-medium ${i <= active ? "text-gray-900" : "text-gray-400"}`}>
+                {step.label}
+              </p>
+              <p className="text-xs text-gray-400">{step.desc}</p>
+            </div>
+            {i === active && (
+              <span className="ml-auto text-xs text-gray-400 animate-pulse">처리 중…</span>
+            )}
+          </li>
+        ))}
+      </ol>
+      <p className="mt-5 text-xs text-gray-400">Gemini 호출 포함 — 완료까지 15~30초 소요됩니다</p>
+    </div>
   );
 }
 

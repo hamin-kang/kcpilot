@@ -6,8 +6,8 @@
 
 - **FastAPI** + **Uvicorn**
 - **Python 3.11** (`.python-version` 명시, uv 관리)
-- **LangChain** / **LangGraph** / **langchain-openai**
-- **OpenAI** SDK
+- **LangChain** / **LangGraph** / **langchain-google-genai** (Google Gemini)
+- **Gemini** — chat(gemini-2.5-flash) + embeddings(gemini-embedding-001, 768차원)
 - **PDF 처리**: pdfminer.six, pdfplumber, pypdfium2, pillow
 - **벡터 검색**: PostgreSQL + **pgvector** (LangChain의 `langchain-postgres` PGVector 래퍼 사용, DB 접속은 `psycopg[binary]`)
 - **토큰 계산**: tiktoken
@@ -37,10 +37,10 @@ uv remove <package>              # 패키지 제거
 
 ## 환경변수 (.env)
 
-`main.py`가 `load_dotenv()`를 호출해 `.env`에서 환경변수를 읽는다. **현재 `.env` 파일은 비어 있다**. OpenAI 호출이 필요한 코드를 추가하려면 `OPENAI_API_KEY`를, pgvector 접속에는 `DATABASE_URL`을 먼저 설정해야 한다.
+`main.py`가 `load_dotenv()`를 호출해 `.env`에서 환경변수를 읽는다. Gemini 호출에는 `GOOGLE_API_KEY`, pgvector 접속에는 `DATABASE_URL`이 필요하다.
 
 ```env
-OPENAI_API_KEY=sk-...
+GOOGLE_API_KEY=...
 DATABASE_URL=postgresql+psycopg://hamin:1234@localhost:5432/kcpilot
 ```
 
@@ -73,10 +73,10 @@ FastAPI는 OpenAPI 문서를 자동 노출한다:
 
 ```
 GET  /ai/health           → {"status": "ok", "service": "ai-service"}  (정상 동작)
-POST /ai/run-assessment   → {"status": "not_implemented"}              (미구현)
+POST /ai/run-assessment   → AssessmentResult (LangGraph 워크플로우 실행)
 ```
 
-`/ai/run-assessment`는 LangGraph 워크플로우를 연결할 자리다. 현재는 `request: dict`를 받아 placeholder만 반환한다. 본격 구현 시 Pydantic 모델로 입출력 스키마를 정의해야 한다.
+`/ai/run-assessment`는 `schemas.AssessmentRequest`를 받아 LangGraph 워크플로우(`workflow.py`)를 실행하고 `AssessmentResult`를 반환한다.
 
 ## 백엔드 연동
 

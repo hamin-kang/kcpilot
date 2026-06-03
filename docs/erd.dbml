@@ -11,7 +11,7 @@
 // 핵심 설계 결정 요약 (자세한 내용 docs/requirements.md, 메모리 참조):
 //   - assessment_id: varchar(12) NanoID (64^12 = 4.7e21 조합)
 //   - 사용자 탈퇴 정책: 익명화 (users.deleted_at + assessments.user_id ON DELETE SET NULL)
-//   - 신뢰도(confidence): 인증별로 부여 (진단 단위 X). Hybrid 산출(RAG + LLM, MIN).
+//   - 신뢰도(confidence): 인증별로 부여 (진단 단위 X). 충실성(LLM) 주축 + 검색(RAG) 게이트.
 //   - 법령명 비정규화 유지 (legal_sources에 직접 저장)
 // ==========================================================================
 
@@ -254,7 +254,7 @@ Table applicable_certifications {
   certification_type  CertificationType [not null, ref: > certification_types.type]
 
   confidence          ConfidenceLevel   [not null, note: '인증별 신뢰도 라벨 (API 응답에 노출)']
-  confidence_score    numeric(3,2)      [not null, note: 'MIN(ragScore, llmScore) ∈ [0.00, 1.00]. DB 전용, 응답에 노출하지 않음.']
+  confidence_score    numeric(3,2)      [not null, note: '신뢰도 점수 ∈ [0.00, 1.00]. 충실성(llmScore) 주축·검색(ragScore) 게이트. DB 전용, 응답 미노출. 산출: requirements.md §4.2.1']
   rationale           text              [note: 'AI가 이 인증이 필요하다고 판단한 근거 요약 (Explainable AI)']
 
   created_at          timestamp         [not null, default: `now()`]
@@ -269,11 +269,11 @@ Table applicable_certifications {
     한 진단에 같은 certification_type 중복 출현 방지 (unique 제약).
 
     confidence 산출 로직 (requirements.md §4.2.1):
-      confidenceScore = MIN(ragSimilarityScore, llmSelfCritiqueScore)
-      - ragSimilarityScore: 제품정보 임베딩 ↔ 법령 임베딩 cosine similarity (0.0~1.0)
-      - llmSelfCritiqueScore: LangGraph self-critique 노드의 자체 평가 (0.0~1.0)
-      - MIN 결합: 보수적 (한 신호라도 의심하면 낮춤 → 거짓 자신감 방지)
-      임계값: >=0.85 → HIGH, >=0.65 → MEDIUM, 그 외 LOW
+      - ragScore: 제품정보 ↔ 법령 임베딩 cosine similarity (관련성 게이트, 0.0~1.0)
+      - llmScore: LangGraph self-critique 노드의 근거 충실성 평가 (신뢰도 주축, 0.0~1.0)
+      결합: 인용없음→0 / ragScore<0.45→min(llmScore,0.64)[LOW강등] / else→llmScore
+      (기존 MIN 폐기: 코사인=관련성·LLM=충실성으로 척도가 달라 대등 결합 부적합)
+      임계값(0.85/0.65)·게이트(0.45)는 정답셋 보정 전 잠정값
   '''
 }
 
