@@ -10,7 +10,7 @@ __pycache__/
 # FAISS 인덱스
 data/vectorstore/
 
-# 원본 PDF (용량 큼)
+# 원본 데이터 (API 응답·PDF 등 용량 크고 재다운로드 가능)
 data/raw/
 
 # pytest 캐시

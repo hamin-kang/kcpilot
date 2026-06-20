@@ -1,7 +1,7 @@
 """법령 코퍼스 + 리콜 사례를 pgvector에 적재하는 1회용 스크립트.
 
 실행:
-    uv run python ingest.py
+    uv run python pipeline/ingest.py
 
 재실행하면 기존 컬렉션을 지우고 다시 넣는다(idempotent).
 
@@ -20,14 +20,18 @@
 본문이 아직 채워지지 않은 placeholder 파일("[여기에"로 시작)은 건너뛴다.
 """
 import json
+import sys
 from pathlib import Path
+
+ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(ROOT))
 
 from langchain_core.documents import Document
 
 import settings
 from llm import get_vector_store
 
-DATA_DIR = Path(__file__).parent / "data"
+DATA_DIR = ROOT / "data"
 LEGAL_DIR = DATA_DIR / "legal"
 PLACEHOLDER_MARK = "[여기에"
 

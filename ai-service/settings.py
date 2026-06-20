@@ -11,6 +11,10 @@ DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql+psycopg://hamin:1234@localhost:5432/kcpilot",
 )
+# 국가법령정보 OPEN API 기관코드(OC) — 로그인 이메일의 @ 앞부분. pipeline/fetch_laws.py가 사용.
+LAW_API_OC = os.getenv("LAW_API_OC", "")
+# 제품안전정보센터(safetykorea) Open API 키 — pipeline/fetch_recalls.py가 사용. 이메일 신청 후 발급.
+SAFETYKOREA_API_KEY = os.getenv("SAFETYKOREA_API_KEY", "")
 
 # --- 모델 ---
 CHAT_MODEL = os.getenv("CHAT_MODEL", "gemini-2.5-flash")

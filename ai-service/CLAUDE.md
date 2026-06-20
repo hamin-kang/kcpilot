@@ -59,6 +59,13 @@ uv run pytest -v                                       # 상세 출력
 uv run pytest -k "패턴"                                # 이름 패턴 매칭
 ```
 
+## 데이터 파이프라인 명령어
+
+```bash
+uv run python pipeline/fetch_laws.py    # 국가법령정보 API → data/raw/law_api/ 저장
+uv run python pipeline/ingest.py        # data/legal/*.md → pgvector 적재
+```
+
 `uv run`은 `.venv`를 자동으로 인식하므로 `source .venv/bin/activate` 불필요.  
 직접 활성화하고 싶다면: `source .venv/bin/activate`
 
