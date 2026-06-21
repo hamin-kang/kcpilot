@@ -1,0 +1,26 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# 환경변수
+.env
+
+# FAISS 인덱스
+data/vectorstore/
+
+# 원본 데이터 (API 응답·PDF 등 용량 크고 재다운로드 가능)
+data/raw/
+
+# 전처리 산출물 (parse_laws.py·parse_emc_pdf.py로 raw에서 재생성 가능)
+data/processed/
+
+# pytest 캐시
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+
+# misc
+.DS_Store
