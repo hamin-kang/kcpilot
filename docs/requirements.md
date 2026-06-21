@@ -308,10 +308,10 @@ KATS는 시험기관이 아니라 제도 관리 기관(정부).
 - 언어: Python 3.11
 - 프레임워크: FastAPI 0.136 + Uvicorn 0.48
 - AI 프레임워크: LangChain 1.3 + LangGraph 1.2
-- LLM 연동: langchain-google-genai 4.2 (Google Gemini)
-- VectorDB: PostgreSQL + pgvector (backend와 동일 DB 인스턴스 공유, `langchain-postgres` PGVector 래퍼 사용)
-- 임베딩 모델: Gemini gemini-embedding-001 (768차원)
-- LLM: Google Gemini (gemini-2.5-flash)
+- LLM 연동: langchain-google-vertexai 3.2 (Vertex AI, 인증은 GCP ADC)
+- VectorDB: PostgreSQL + pgvector (backend와 동일 DB 인스턴스 공유, `langchain-postgres` PGVector 래퍼 사용). 컬렉션 2개: kc_legal(조문) / kc_items(별표 품목)
+- 임베딩 모델: Vertex AI gemini-embedding-001 (3072차원, MRL)
+- LLM: Vertex AI Gemini (gemini-2.5-flash)
 - PDF 파싱: pdfplumber 0.11
 - 토큰 계산: tiktoken 0.13
 

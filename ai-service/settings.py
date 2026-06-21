@@ -6,7 +6,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- 외부 연결 ---
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
+# Vertex AI는 GCP ADC(application default credentials)로 인증한다. API 키 불필요.
+# GCP_PROJECT는 필수(없으면 호출 실패), GCP_LOCATION은 모델 리전.
+GCP_PROJECT = os.getenv("GCP_PROJECT", "")
+GCP_LOCATION = os.getenv("GCP_LOCATION", "us-central1")
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql+psycopg://hamin:1234@localhost:5432/kcpilot",
@@ -16,20 +19,34 @@ LAW_API_OC = os.getenv("LAW_API_OC", "")
 # 제품안전정보센터(safetykorea) Open API 키 — pipeline/fetch_recalls.py가 사용. 이메일 신청 후 발급.
 SAFETYKOREA_API_KEY = os.getenv("SAFETYKOREA_API_KEY", "")
 
-# --- 모델 ---
+# --- 모델 (Vertex AI 모델명: "models/" 접두사 없음) ---
 CHAT_MODEL = os.getenv("CHAT_MODEL", "gemini-2.5-flash")
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "models/gemini-embedding-001")
-# gemini-embedding-001은 MRL로 출력 차원 조정 가능(기본 3072). 768로 고정해
-# pgvector 컬럼 차원과 일치시킨다. 코사인 거리는 크기 불변이라 정규화 걱정 없음.
-EMBEDDING_DIM = 768
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "gemini-embedding-001")
+# gemini-embedding-001은 MRL로 출력 차원 조정 가능(768/1536/3072).
+# 코퍼스 규모(~1,400건)에서 차원 축소 비용이 없으므로 최대 3072로 설정.
+EMBEDDING_DIM = 3072
 
 # --- pgvector 컬렉션 이름 ---
-LAW_COLLECTION = "kc_legal"       # 법령 조항 임베딩
+LAW_COLLECTION = "kc_legal"       # 법령 조문 임베딩 (자유형 텍스트 → 맥락 검색)
+ITEM_COLLECTION = "kc_items"      # 별표 품목 임베딩 (품목명 → 인증등급 매칭)
 RECALL_COLLECTION = "kc_recalls"  # 리콜 사례 임베딩 (샘플)
 
 # --- 검색 ---
 TOP_K_LAW = 6      # 법령 검색 시 끌어올 청크 수
+TOP_K_ITEM = 5     # 품목 매칭 시 끌어올 후보 수
 TOP_K_RECALL = 3   # 리콜 사례 검색 시 끌어올 건수
+
+# --- 품목 매칭 신뢰 바닥 ---
+# 별표 품목은 cert_level의 권위 있는 출처다(법령 본문에서 추론하지 않는다). 다만
+# 품목명 의미 매칭이 약하면(예: "헤어드라이어"↔무관 품목) 잘못된 cert_level을
+# 확신 있게 끌어올 수 있다. 매칭 유사도가 이 값 미만이면 권위 있는 매칭으로 인정하지
+# 않고, 그 인증은 본문 추론으로만 뒷받침된 것으로 보아 신뢰도를 낮춘다.
+# 이 값도 정답셋 보정 대상(Phase 3) — 현재는 보수적 상속값.
+ITEM_MATCH_FLOOR = 0.50
+
+# 같은 축에서 1순위 품목과 인증등급이 다른 품목이 이 차이 이내로 붙어 있으면
+# "어느 등급인지 모호"하다고 보고 전문가 검토 플래그를 세운다(등급 오판 방지).
+ITEM_AMBIGUITY_MARGIN = 0.05
 
 # --- 신뢰도 임계값 (requirements.md 4.2.1) ---
 # 주의: 이 임계값은 아직 정답셋으로 보정되지 않은 상속값이다(Phase 3에서 측정 필요).

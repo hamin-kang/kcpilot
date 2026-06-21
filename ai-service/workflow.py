@@ -41,6 +41,7 @@ class AssessmentState(TypedDict, total=False):
     categories: list[str]
     search_query: str
     law_hits: list[dict]       # {ref, law, article, axis, category, text, similarity}
+    item_hits: list[dict]      # {item_name, cert_level, axis, category, law, article, similarity}
     cert_drafts: list[dict]
     test_items: list[dict]
     labs: list[dict]
@@ -103,6 +104,33 @@ def _product_brief(req: dict) -> str:
     return "\n".join(parts)
 
 
+def _product_query(req: dict) -> str:
+    """품목 분류표 매칭용 질의. 법령 검색 질의와 달리 '제품 정체성'에 집중한다
+    (예: '헤어드라이어 가정용 220V'). 법령 키워드가 섞이면 엉뚱한 품목이 잡힌다.
+    """
+    parts = [req["product_name"], req.get("usage") or ""]
+    if req.get("specs"):
+        parts.append(req["specs"])
+    return " ".join(p for p in parts if p).strip()
+
+
+def _strong_items(state: AssessmentState) -> list[dict]:
+    """신뢰 바닥을 넘긴 품목 매칭만(권위 있는 인증등급 출처)."""
+    return [
+        h for h in state.get("item_hits", [])
+        if h["similarity"] >= settings.ITEM_MATCH_FLOOR
+    ]
+
+
+def _best_item_for_draft(draft: dict, strong_items: list[dict]) -> dict | None:
+    """이 인증(축+등급)을 뒷받침하는 품목 매칭 중 최고 유사도 1건."""
+    return max(
+        (h for h in strong_items
+         if h["axis"] == draft.get("axis") and h["cert_level"] == draft.get("type")),
+        key=lambda h: h["similarity"], default=None,
+    )
+
+
 def _log(state: AssessmentState, step: str, detail: str) -> list[dict]:
     log = list(state.get("reasoning_log", []))
     log.append({"step": step, "detail": detail})
@@ -130,11 +158,36 @@ def classify_node(state: AssessmentState) -> dict:
     }
 
 
+# 안전 법령 조문은 전기용품·생활용품을 함께 다뤄 category가 이 결합값으로 묶여 저장된다.
+_COMBINED_SAFETY_CATEGORY = "전기용품,생활용품"
+
+
+def _build_law_filter(state: AssessmentState) -> dict | None:
+    """classify가 결정한 카테고리로 검색 범위를 좁히는 필터를 만든다.
+
+    축(안전/전자파)이 아니라 category로 거른다 — 축으로 거르면 '안전+전자파 동시
+    인증'을 한 번에 식별하지 못해 핵심 기능이 깨진다. 전기용품/생활용품 질의는
+    안전 조문의 결합 카테고리("전기용품,생활용품")도 함께 매칭되도록 확장한다.
+    """
+    cats = state.get("categories") or []
+    if not cats:
+        return None
+    vals = set(cats)
+    if {"전기용품", "생활용품"} & vals:
+        vals.add(_COMBINED_SAFETY_CATEGORY)
+    return {"category": {"$in": sorted(vals)}}
+
+
 def retrieve_node(state: AssessmentState) -> dict:
     req = state["request"]
     query = state.get("search_query") or _product_brief(req)
     store = get_vector_store(settings.LAW_COLLECTION)
-    pairs = store.similarity_search_with_score(query, k=settings.TOP_K_LAW)
+
+    law_filter = _build_law_filter(state)
+    pairs = store.similarity_search_with_score(query, k=settings.TOP_K_LAW, filter=law_filter)
+    # 폴백: 필터가 너무 좁아 0건이면 필터를 풀고 재검색
+    if not pairs and law_filter is not None:
+        pairs = store.similarity_search_with_score(query, k=settings.TOP_K_LAW)
 
     hits: list[dict] = []
     for i, (doc, distance) in enumerate(pairs, start=1):
@@ -156,6 +209,45 @@ def retrieve_node(state: AssessmentState) -> dict:
     }
 
 
+def match_items_node(state: AssessmentState) -> dict:
+    """별표 품목(kc_items)에서 제품을 매칭해 cert_level의 권위 있는 출처를 얻는다.
+
+    법령 조문 검색(retrieve_node)과 분리한 이유: 품목은 "이 제품이 무슨 인증등급인가"를
+    품목명 매칭으로 정밀하게 찾고, cert_level은 본문 추론이 아니라 metadata에서 그대로
+    꺼낸다. 이러면 LLM이 긴 본문에서 등급을 잘못 읽는 오류가 구조적으로 사라진다.
+    """
+    req = state["request"]
+    query = _product_query(req)
+    store = get_vector_store(settings.ITEM_COLLECTION)
+
+    item_filter = _build_law_filter(state)
+    pairs = store.similarity_search_with_score(query, k=settings.TOP_K_ITEM, filter=item_filter)
+    if not pairs and item_filter is not None:  # 필터가 너무 좁아 0건이면 풀고 재검색
+        pairs = store.similarity_search_with_score(query, k=settings.TOP_K_ITEM)
+
+    hits: list[dict] = []
+    for doc, distance in pairs:
+        m = doc.metadata or {}
+        hits.append({
+            "item_name": m.get("item_name") or doc.page_content,
+            "cert_level": m.get("cert_level"),
+            "axis": m.get("axis"),
+            "category": m.get("category"),
+            "law": m.get("law", "(미상)"),
+            "article": m.get("article", ""),
+            "similarity": round(cosine_distance_to_similarity(distance), 3),
+        })
+
+    strong = [h for h in hits if h["similarity"] >= settings.ITEM_MATCH_FLOOR]
+    summary = "; ".join(
+        f"{h['item_name']}({h['axis']}/{h['cert_level']}, 유사도 {h['similarity']})" for h in strong
+    ) or "신뢰할 만한 품목 매칭 없음"
+    return {
+        "item_hits": hits,
+        "reasoning_log": _log(state, "③ 품목 분류표 매칭", summary),
+    }
+
+
 def _format_law_context(hits: list[dict]) -> str:
     if not hits:
         return "(검색된 법령 없음)"
@@ -168,19 +260,38 @@ def _format_law_context(hits: list[dict]) -> str:
     return "\n\n".join(blocks)
 
 
+def _format_item_context(item_hits: list[dict]) -> str:
+    """신뢰 바닥을 넘긴 품목 매칭만 권위 있는 인증등급 출처로 제시한다."""
+    strong = [h for h in item_hits if h["similarity"] >= settings.ITEM_MATCH_FLOOR]
+    if not strong:
+        return "(신뢰할 만한 품목 매칭 없음 — 아래 법령 본문으로만 판단하라)"
+    return "\n".join(
+        f"- {h['item_name']} → {h['axis']}축 / {h['cert_level']} / {h['category']} "
+        f"[{h['law']} {h['article']}] (매칭도 {h['similarity']})"
+        for h in strong
+    )
+
+
 def diagnose_node(state: AssessmentState) -> dict:
     req = state["request"]
     hits = state.get("law_hits", [])
+    item_hits = state.get("item_hits", [])
     llm = get_chat().with_structured_output(DiagnoseOut)
     prompt = (
-        "너는 KC 인증 사전진단 전문가다. 아래 [근거]로 제공된 법령 텍스트에만 근거하여 "
-        "제품에 적용되는 인증을 빠짐없이 식별하라.\n"
+        "너는 KC 인증 사전진단 전문가다. 제품에 적용되는 인증을 빠짐없이 식별하라.\n"
+        "두 종류의 자료가 주어진다:\n"
+        "1) [품목 분류표 매칭] — 공식 별표에서 제품명으로 찾은 결과. cert_level의 권위 있는 출처다.\n"
+        "2) [근거 법령] — 인증의 이유·절차·시험항목을 설명하는 조문.\n\n"
         "중요 규칙:\n"
-        "- 한 제품이 안전 축과 전자파 축에 동시에 걸릴 수 있다. 둘 다 해당하면 둘 다 식별하라.\n"
-        "- 제공된 근거에 없는 내용은 절대 지어내지 마라. 근거가 부족하면 그 인증은 빼거나 reason에 한계를 명시하라.\n"
+        "- 품목 분류표 매칭에 나온 인증은 반드시 포함하고, type(인증등급)은 거기 적힌 값을 그대로 써라. "
+        "법령 본문을 보고 인증등급을 새로 추론하지 마라.\n"
+        "- 한 제품이 안전 축과 전자파 축에 동시에 걸릴 수 있다. 둘 다 매칭되면 둘 다 식별하라.\n"
+        "- 분류표 매칭이 없는 인증을 본문 근거로 추가할 수는 있으나, 그때는 reason에 "
+        "'분류표 미확인'이라고 한계를 명시하라.\n"
         "- 각 인증의 cited_refs에는 근거가 된 [근거N]의 번호를 넣어라.\n"
         "- 시험 항목과 추천 시험기관(KTL/KTR/KTC)도 근거 범위에서 제시하라.\n\n"
         f"=== 제품 ===\n{_product_brief(req)}\n\n"
+        f"=== 품목 분류표 매칭 ===\n{_format_item_context(item_hits)}\n\n"
         f"=== 근거 법령 ===\n{_format_law_context(hits)}"
     )
     out: DiagnoseOut = llm.invoke(prompt)
@@ -189,7 +300,7 @@ def diagnose_node(state: AssessmentState) -> dict:
         "cert_drafts": [c.model_dump() for c in out.certifications],
         "test_items": [t.model_dump() for t in out.test_items],
         "labs": [l.model_dump() for l in out.recommended_labs],
-        "reasoning_log": _log(state, "③ 인증·시험항목·기관 식별", f"{cert_summary} · {out.reasoning}"),
+        "reasoning_log": _log(state, "④ 인증·시험항목·기관 식별", f"{cert_summary} · {out.reasoning}"),
     }
 
 
@@ -213,41 +324,52 @@ def recall_node(state: AssessmentState) -> dict:
         })
     return {
         "recall_cases": cases,
-        "reasoning_log": _log(state, "④ 유사 리콜 검색", f"{len(cases)}건 검색"),
+        "reasoning_log": _log(state, "⑤ 유사 리콜 검색", f"{len(cases)}건 검색"),
     }
 
 
 def critique_node(state: AssessmentState) -> dict:
     drafts = state.get("cert_drafts", [])
     hits = {h["ref"]: h for h in state.get("law_hits", [])}
+    strong_items = _strong_items(state)
     if not drafts:
         return {
             "critiques": [],
-            "reasoning_log": _log(state, "⑤ 자기비판", "식별된 인증이 없어 평가 생략"),
+            "reasoning_log": _log(state, "⑥ 자기비판", "식별된 인증이 없어 평가 생략"),
         }
 
-    # 각 인증과 그 근거 텍스트를 번호와 함께 비판 대상으로 제시
+    # 각 인증을 번호와 함께 제시한다. 두 종류의 뒷받침을 구분해서 보여준다:
+    # (1) 분류표 매칭(인증등급의 공식 출처) (2) 인용 법령(이유·절차 근거)
     lines = []
     for i, d in enumerate(drafts):
         cited = " / ".join(
             f"{hits[r]['law']} {hits[r]['article']}: {hits[r]['text'][:120]}"
             for r in d.get("cited_refs", []) if r in hits
         ) or "(인용 근거 없음)"
-        lines.append(f"{i}. [{d['axis']}-{d['type']}] 근거: {cited}")
+        item = _best_item_for_draft(d, strong_items)
+        table = (
+            f"공식 분류표 등재 — {item['item_name']} ({item['law']} {item['article']}, 매칭도 {item['similarity']})"
+            if item else "분류표 미확인"
+        )
+        lines.append(f"{i}. [{d['axis']}-{d['type']}] 분류표: {table} | 법령근거: {cited}")
 
     llm = get_chat().with_structured_output(CritiqueOut)
     prompt = (
-        "아래는 1차 진단 결과다. 각 인증에 대해 '인용된 법령 근거가 실제로 그 결론을 "
-        "뒷받침하는가'를 비판적으로 평가하라. 근거가 명확하면 높게(0.85+), "
-        "근거가 빈약하거나 해석이 모호하면 낮게(0.65 미만) 점수를 매겨라. "
-        "거짓 자신감을 경계하라. 각 평가에는 위 목록의 번호(index)를 그대로 넣어라.\n\n"
+        "아래는 1차 진단 결과다. 각 인증이 타당한지 비판적으로 평가하라(0.0~1.0).\n"
+        "평가 기준:\n"
+        "- 인증등급의 권위 있는 출처는 '공식 분류표 등재'다. 분류표에 등재된 인증은 "
+        "법령 인용이 없더라도 그 사실만으로 낮게 매기지 마라(분류표가 곧 근거다). "
+        "이 경우 0.85+를 기본으로 하되, 제품과 매칭된 품목이 어긋나 보이면 낮춰라.\n"
+        "- '분류표 미확인'인 인증은 법령 인용이 결론을 뒷받침하는지로 평가하라. "
+        "근거가 명확하면 높게(0.85+), 빈약하거나 모호하면 낮게(0.65 미만).\n"
+        "- 거짓 자신감을 경계하라. 각 평가에는 위 목록의 번호(index)를 그대로 넣어라.\n\n"
         + "\n".join(lines)
     )
     out: CritiqueOut = llm.invoke(prompt)
     note = "; ".join(f"#{c.index}={c.llm_score}" for c in out.critiques)
     return {
         "critiques": [c.model_dump() for c in out.critiques],
-        "reasoning_log": _log(state, "⑤ 자기비판", f"{note} · {out.overall_note}"),
+        "reasoning_log": _log(state, "⑥ 자기비판", f"{note} · {out.overall_note}"),
     }
 
 
@@ -256,12 +378,14 @@ def _build_graph():
     g = StateGraph(AssessmentState)
     g.add_node("classify", classify_node)
     g.add_node("retrieve", retrieve_node)
+    g.add_node("match_items", match_items_node)
     g.add_node("diagnose", diagnose_node)
     g.add_node("recall", recall_node)
     g.add_node("critique", critique_node)
     g.add_edge(START, "classify")
     g.add_edge("classify", "retrieve")
-    g.add_edge("retrieve", "diagnose")
+    g.add_edge("retrieve", "match_items")
+    g.add_edge("match_items", "diagnose")
     g.add_edge("diagnose", "recall")
     g.add_edge("recall", "critique")
     g.add_edge("critique", END)
@@ -279,8 +403,28 @@ def _graph():
 
 
 # ---------- 최종 조립 ----------
+def _is_item_ambiguous(strong_items: list[dict]) -> bool:
+    """같은 축에서 1순위와 인증등급이 다른 품목이 매칭 마진 이내로 붙어 있는가.
+
+    그렇다면 어느 등급인지 분류표만으로는 결정할 수 없는 모호한 상황이다.
+    """
+    by_axis: dict[str, list[dict]] = {}
+    for h in strong_items:
+        by_axis.setdefault(h["axis"], []).append(h)
+    for cands in by_axis.values():
+        cands.sort(key=lambda h: h["similarity"], reverse=True)
+        top = cands[0]
+        for other in cands[1:]:
+            if other["cert_level"] != top["cert_level"] and (
+                top["similarity"] - other["similarity"] <= settings.ITEM_AMBIGUITY_MARGIN
+            ):
+                return True
+    return False
+
+
 def _assemble(state: AssessmentState) -> AssessmentResult:
     hits = {h["ref"]: h for h in state.get("law_hits", [])}
+    strong_items = _strong_items(state)
     critique_map = {c["index"]: c for c in state.get("critiques", [])}
 
     certifications: list[Certification] = []
@@ -292,17 +436,26 @@ def _assemble(state: AssessmentState) -> AssessmentResult:
         crit = critique_map.get(i, {})
         llm_score = round(float(crit.get("llm_score", 0.0)), 3)
 
-        # --- 신뢰도 산출 (Phase 1) ---
-        # rag_score(코사인)는 검색 관련성 게이트로만, 신뢰도 자체는 충실성(llm_score)이 결정.
-        if not refs:
-            # 인용 근거가 전혀 없음 → 결론을 뒷받침할 법령이 없음
+        # 품목 분류표 앵커: cert_level의 권위 있는 출처(본문 추론이 아니라).
+        item = _best_item_for_draft(d, strong_items)
+        item_score = item["similarity"] if item else 0.0
+        matched_item = item["item_name"] if item else None
+
+        # --- 신뢰도 산출 (Phase 1 + 품목 앵커링) ---
+        if item:
+            # 공식 분류표에 등재된 인증 → 등급 자체는 권위 있게 확정됨. 최소 MEDIUM을
+            # 보장하고, 그 위로는 충실성(llm_score)이 끌어올린다. 등급 모호성은 별도
+            # needs_expert 플래그가 처리한다.
+            confidence_score = round(max(llm_score, settings.MEDIUM_THRESHOLD), 3)
+        elif not refs:
+            # 분류표 매칭도 인용 근거도 없음 → 뒷받침 전무
             confidence_score = 0.0
         elif rag_score < settings.RETRIEVAL_FLOOR:
-            # 검색이 빈약 → 충실성이 높아도 MEDIUM 밑으로 강등(최대 LOW)
+            # 검색이 빈약 → 충실성이 높아도 MEDIUM 밑으로 강등
             confidence_score = round(min(llm_score, settings.MEDIUM_THRESHOLD - 0.01), 3)
         else:
-            # 관련 법령을 찾음 → 충실성 판단이 신뢰도를 결정
-            confidence_score = llm_score
+            # 본문 근거만 있고 분류표 미확인 → 등급 오판 위험, HIGH로 올리지 않음
+            confidence_score = round(min(llm_score, settings.HIGH_THRESHOLD - 0.01), 3)
         citations = [
             Citation(
                 law=hits[r]["law"],
@@ -317,13 +470,28 @@ def _assemble(state: AssessmentState) -> AssessmentResult:
             category=d.get("category"),
             reason=d["reason"],
             confidence=settings.confidence_label(confidence_score),
+            matched_item=matched_item,
             rag_score=rag_score,
+            item_score=item_score,
             llm_score=llm_score,
             confidence_score=confidence_score,
             citations=citations,
         ))
 
-    needs_expert = any(c.confidence == "LOW" for c in certifications) or not certifications
+    # 같은 (축, 인증등급)이 여러 품목에서 중복 도출될 수 있다(예: 적합등록 품목 2개)
+    # → 신뢰도가 가장 높은 1건만 남긴다.
+    deduped: dict[tuple, Certification] = {}
+    for c in certifications:
+        key = (c.axis, c.type)
+        if key not in deduped or c.confidence_score > deduped[key].confidence_score:
+            deduped[key] = c
+    certifications = list(deduped.values())
+
+    needs_expert = (
+        _is_item_ambiguous(strong_items)
+        or any(c.confidence == "LOW" for c in certifications)
+        or not certifications
+    )
 
     return AssessmentResult(
         product_name=state["request"]["product_name"],

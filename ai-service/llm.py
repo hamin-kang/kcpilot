@@ -1,31 +1,35 @@
-"""Gemini chat/embeddings + pgvector 스토어 팩토리.
+"""Vertex AI chat/embeddings + pgvector 스토어 팩토리.
 
-GOOGLE_API_KEY는 load_dotenv()로 환경변수에 올라가 있어 두 클래스가 자동으로 읽는다.
+인증은 GCP ADC(application default credentials)로 한다 — API 키를 쓰지 않는다.
+settings.GCP_PROJECT가 비어 있으면 호출이 실패하므로 .env에 반드시 설정한다.
 """
 from functools import lru_cache
 
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from langchain_google_vertexai import ChatVertexAI, VertexAIEmbeddings
 from langchain_postgres import PGVector
 
 import settings
 
 
 @lru_cache(maxsize=4)
-def get_chat(temperature: float = 0.0) -> ChatGoogleGenerativeAI:
+def get_chat(temperature: float = 0.0) -> ChatVertexAI:
     """진단은 결정론적이어야 하므로 temperature 기본 0."""
-    return ChatGoogleGenerativeAI(
+    return ChatVertexAI(
         model=settings.CHAT_MODEL,
         temperature=temperature,
-        google_api_key=settings.GOOGLE_API_KEY or None,
+        project=settings.GCP_PROJECT or None,
+        location=settings.GCP_LOCATION,
     )
 
 
 @lru_cache(maxsize=1)
-def get_embeddings() -> GoogleGenerativeAIEmbeddings:
-    return GoogleGenerativeAIEmbeddings(
-        model=settings.EMBEDDING_MODEL,
-        google_api_key=settings.GOOGLE_API_KEY or None,
-        output_dimensionality=settings.EMBEDDING_DIM,
+def get_embeddings() -> VertexAIEmbeddings:
+    # dimensions: gemini-embedding-001의 MRL 출력 차원(settings.EMBEDDING_DIM).
+    return VertexAIEmbeddings(
+        model_name=settings.EMBEDDING_MODEL,
+        project=settings.GCP_PROJECT or None,
+        location=settings.GCP_LOCATION,
+        dimensions=settings.EMBEDDING_DIM,
     )
 
 
