@@ -97,6 +97,8 @@ subject 규칙
 | **개발 진행** | **Squash and Merge** | `feat, bugfix, refactor ...` → `develop` | 자잘한 커밋을 하나로 합쳐 히스토리 정돈 |
 | **제품 배포** | **Merge Commit** | `release, hotfix` → `main` | 배포 시점의 명확한 기록 및 시각화 |
 
+> ⚠️ **`develop` → `main` 직접 병합 금지.** develop을 main에 squash merge하면 두 브랜치 히스토리가 갈려서, 이후 hotfix를 develop에 역병합할 때 수천 줄 diff와 충돌이 발생한다. 반드시 `release` 브랜치를 거쳐 Merge Commit으로 병합한다.
+
 ### 1) Squash and Merge (작업 이력 단일화)
 
 `feat, bugfix, refactor ...` 보조 브랜치에서 작업할 때 발생하는 수많은 ‘자잘한’ 커밋들을 하나로 뭉쳐서 `develop`에 합치는 방식이다.
