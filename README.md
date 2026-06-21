@@ -104,7 +104,10 @@ docker-compose up -d
 
 # 3. 세 서비스 실행 (각각 별도 터미널)
 cd backend    && ./gradlew bootRun                            # :8080
-cd ai-service && uv sync && uv run python ingest.py          # 최초 1회: 법령·리콜 데이터 pgvector 적재
+cd ai-service && uv sync                                      # 의존성 설치
+cd ai-service && uv run python pipeline/parse_laws.py && \
+                uv run python pipeline/parse_emc_pdf.py && \
+                uv run python pipeline/ingest.py             # 최초 1회: raw 파싱 → pgvector 적재
 cd ai-service && uv run uvicorn main:app --reload             # :8000
 cd frontend   && npm install && npm run dev                   # :3000
 ```
@@ -118,7 +121,7 @@ cd frontend   && npm install && npm run dev                   # :3000
 
 - **루트 `.env`** — `POSTGRES_USER` / `POSTGRES_PASSWORD`. docker-compose가 이 값으로 PostgreSQL 컨테이너를 생성한다.
 - **`backend/.../application-local.yaml`** — Spring Boot 로컬 DB 연결 설정. `.env`의 `POSTGRES_USER` / `POSTGRES_PASSWORD`와 반드시 일치해야 한다.
-- **`ai-service/.env`** — `GOOGLE_API_KEY` (Gemini 호출용)와 `DATABASE_URL`. RAG 검색·진단에 필수다.
+- **`ai-service/.env`** — `GCP_PROJECT` (Vertex AI 호출용)와 `DATABASE_URL`. RAG 검색·진단에 필수다. 인증은 GCP ADC(`gcloud auth application-default login`) — API 키를 쓰지 않는다.
 
 ### Docker
 

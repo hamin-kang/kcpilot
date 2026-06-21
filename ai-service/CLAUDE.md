@@ -6,10 +6,10 @@
 
 - **FastAPI** + **Uvicorn**
 - **Python 3.11** (`.python-version` 명시, uv 관리)
-- **LangChain** / **LangGraph** / **langchain-google-genai** (Google Gemini)
-- **Gemini** — chat(gemini-2.5-flash) + embeddings(gemini-embedding-001, 768차원)
+- **LangChain** / **LangGraph** / **langchain-google-vertexai** (Vertex AI)
+- **Vertex AI (Gemini)** — chat(gemini-2.5-flash) + embeddings(gemini-embedding-001, 3072차원 MRL). 인증은 GCP ADC(API 키 아님)
 - **PDF 처리**: pdfminer.six, pdfplumber, pypdfium2, pillow
-- **벡터 검색**: PostgreSQL + **pgvector** (LangChain의 `langchain-postgres` PGVector 래퍼 사용, DB 접속은 `psycopg[binary]`)
+- **벡터 검색**: PostgreSQL + **pgvector** (LangChain의 `langchain-postgres` PGVector 래퍼 사용, DB 접속은 `psycopg[binary]`). 컬렉션 2개: `kc_legal`(법령 조문, 본문 임베딩) / `kc_items`(별표 품목, 품목명 임베딩 + cert_level은 metadata)
 - **토큰 계산**: tiktoken
 - **pytest** (테스트, dev 의존성)
 
@@ -37,12 +37,15 @@ uv remove <package>              # 패키지 제거
 
 ## 환경변수 (.env)
 
-`main.py`가 `load_dotenv()`를 호출해 `.env`에서 환경변수를 읽는다. Gemini 호출에는 `GOOGLE_API_KEY`, pgvector 접속에는 `DATABASE_URL`이 필요하다.
+`main.py`가 `load_dotenv()`를 호출해 `.env`에서 환경변수를 읽는다. Vertex AI 호출에는 `GCP_PROJECT`, pgvector 접속에는 `DATABASE_URL`이 필요하다.
 
 ```env
-GOOGLE_API_KEY=...
+GCP_PROJECT=<GCP 프로젝트 ID>
+GCP_LOCATION=us-central1   # 선택, 기본 us-central1
 DATABASE_URL=postgresql+psycopg://hamin:1234@localhost:5432/kcpilot
 ```
+
+**인증은 GCP ADC(application default credentials)로 한다 — API 키를 쓰지 않는다.** 최초 1회 `gcloud auth application-default login`으로 ADC를 발급하고, 해당 계정에 대상 프로젝트의 **Vertex AI User**(`roles/aiplatform.user`) 권한과 **Vertex AI API 활성화 + 결제 연결**이 필요하다.
 
 `.env`는 절대 커밋하지 말 것 (`.gitignore` 처리됨).
 
@@ -62,9 +65,17 @@ uv run pytest -k "패턴"                                # 이름 패턴 매칭
 ## 데이터 파이프라인 명령어
 
 ```bash
-uv run python pipeline/fetch_laws.py    # 국가법령정보 API → data/raw/law_api/ 저장
-uv run python pipeline/ingest.py        # data/legal/*.md → pgvector 적재
+uv run python pipeline/fetch_laws.py     # 국가법령정보 API → data/raw/law_api/ 저장
+uv run python pipeline/parse_laws.py     # raw 법령 JSON → data/processed/*.md (조문 + 분류별표 품목)
+uv run python pipeline/parse_emc_pdf.py  # EMC 별표1 PDF → data/processed/*.md (전자파 품목)
+uv run python pipeline/ingest.py         # data/processed/*.md → pgvector 적재 (kc_legal + kc_items)
 ```
+
+흐름: `raw/` (불변) → `parse_*.py` → `processed/*.md` (재생성 가능, gitignore) → `ingest.py` → pgvector.
+`ingest.py`는 frontmatter의 `item_name` 유무로 조문(kc_legal)과 품목(kc_items)을 갈라 적재한다.
+Vertex 임베딩은 요청당 250건 제한이라 `ingest.py`가 200건씩 배치로 끊는다.
+
+> **임베딩 차원 변경 시:** pgvector 임베딩 컬럼은 첫 생성 때 차원이 고정된다. `EMBEDDING_DIM`을 바꾸면 기존 테이블을 드롭해야 새 차원으로 재생성된다: `docker exec kcpilot-postgres psql -U hamin -d kcpilot -c "DROP TABLE IF EXISTS langchain_pg_embedding CASCADE; DROP TABLE IF EXISTS langchain_pg_collection CASCADE;"` 후 `ingest.py` 재실행.
 
 `uv run`은 `.venv`를 자동으로 인식하므로 `source .venv/bin/activate` 불필요.  
 직접 활성화하고 싶다면: `source .venv/bin/activate`

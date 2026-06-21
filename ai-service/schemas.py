@@ -33,9 +33,13 @@ class Certification(BaseModel):
     category: str | None = Field(None, description="전기용품/생활용품/어린이제품")
     reason: str = Field(..., description="해당 인증이 필요하다고 판단한 근거 설명")
     confidence: str = Field(..., description="HIGH | MEDIUM | LOW")
-    rag_score: float = Field(..., description="RAG 유사도 점수 (0~1, 디버깅용)")
+    matched_item: str | None = Field(
+        None, description="분류표에서 이 인증등급을 뒷받침한 품목명 (없으면 본문 추론)"
+    )
+    rag_score: float = Field(..., description="법령 검색 유사도 점수 (0~1, 디버깅용)")
+    item_score: float = Field(0.0, description="품목 분류표 매칭 유사도 (0~1, 디버깅용)")
     llm_score: float = Field(..., description="LLM 자기비판 점수 (0~1, 디버깅용)")
-    confidence_score: float = Field(..., description="MIN(rag, llm), 디버깅용")
+    confidence_score: float = Field(..., description="최종 신뢰도 점수 (0~1, 디버깅용)")
     citations: list[Citation] = Field(default_factory=list)
 
 
