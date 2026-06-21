@@ -12,8 +12,10 @@ frontmatter의 item_name 유무다:
   본문 전체를 임베딩한다(자유형 텍스트라 맥락 검색이 맞다).
 
 - item_name 있음 → 별표 품목 → kc_items 컬렉션.
-  품목명만 임베딩한다("헤어드라이어"↔"모발관리기" 매칭 정밀도를 위해). cert_level은
-  본문에서 읽지 않고 metadata에서 그대로 꺼내 쓴다(워크플로우의 권위 있는 출처).
+  품목명 + 본문(대표 품목 리스트 포함)을 함께 임베딩한다. item_name만 쓰면
+  "이·미용기기류" ↔ "헤어드라이어"처럼 카테고리명과 제품명이 달라 매칭이 안 되는데,
+  본문에 "전기드라이기(머리, 손톱 포함)" 같은 대표 품목이 포함되면 해결된다.
+  cert_level은 본문에서 읽지 않고 metadata에서 그대로 꺼낸다(권위 있는 출처).
 
 각 .md는 YAML 스타일 frontmatter + 본문으로 구성된다:
 
@@ -29,6 +31,7 @@ frontmatter의 item_name 유무다:
 본문이 아직 채워지지 않은 placeholder 파일("[여기에"로 시작)은 건너뛴다.
 """
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -45,6 +48,25 @@ from preprocess import clean_legal_text
 DATA_DIR = ROOT / "data"
 LEGAL_DIR = DATA_DIR / "processed"
 PLACEHOLDER_MARK = "[여기에"
+
+_REP_PRODUCTS_RE = re.compile(
+    r"대표적인 품목은 다음과 같다[.\-\s]+(.+?)(?=적합성평가|$)", re.DOTALL
+)
+
+
+def _rep_keywords(body: str) -> str:
+    """body에서 '대표적인 품목은 다음과 같다' 뒤의 첫 5개 제품명을 추출한다.
+
+    '이·미용기기류' 같은 광범위한 카테고리명만으로는 '헤어드라이어'와 매칭이 안 되는데,
+    본문의 대표 품목 리스트('전기드라이기(머리, 손톱 포함)' 등)를 임베딩 텍스트에 포함하면
+    검색 정확도가 크게 올라간다.
+    """
+    m = _REP_PRODUCTS_RE.search(body)
+    if not m:
+        return ""
+    parts = re.split(r"[,，\n]", m.group(1).strip())[:5]
+    names = [re.sub(r"\(.*?\)", "", p).strip(" -·\t") for p in parts]
+    return ", ".join(n for n in names if len(n) > 1)
 
 
 def _parse_frontmatter(text: str) -> tuple[dict, str]:
@@ -81,7 +103,9 @@ def load_documents() -> tuple[list[Document], list[Document]]:
 
     판별: frontmatter에 item_name이 있으면 품목, 없으면 조문.
     - 조문은 본문 전체를 임베딩한다(맥락 검색).
-    - 품목은 품목명만 임베딩한다(매칭 정밀도). 본문은 표시용으로 metadata에 보관.
+    - 품목은 품목명 + 본문을 함께 임베딩한다. 카테고리명("이·미용기기류")만으론
+      개별 제품명("헤어드라이어")과 매칭이 안 되지만, 본문의 대표 품목 리스트를
+      포함하면 "전기드라이기(머리, 손톱 포함)"가 검색에 반영된다.
     """
     legal_docs: list[Document] = []
     item_docs: list[Document] = []
@@ -94,9 +118,14 @@ def load_documents() -> tuple[list[Document], list[Document]]:
         body = clean_legal_text(body)  # 임베딩 전 노이즈 제거 (이중 안전장치)
         item_name = (meta.get("item_name") or "").strip()
         if item_name:
-            # 품목: 품목명을 임베딩 대상으로, 본문은 표시용으로 metadata에 보관
+            # 품목: 카테고리명 + 대표 품목 키워드 + 본문을 임베딩한다.
+            # 카테고리명("이·미용기기류")만으론 "헤어드라이어"와 매칭이 안 되지만,
+            # 대표 품목 키워드("전기드라이기, 전기고데기")를 앞에 붙이면
+            # 임베딩 공간에서 제품명과 직접 연결된다.
+            keywords = _rep_keywords(body)
+            embed_text = f"{item_name} {keywords}\n{body}" if keywords else f"{item_name}\n{body}"
             item_docs.append(Document(
-                page_content=item_name,
+                page_content=embed_text,
                 metadata={**_common_meta(meta), "body": body},
             ))
         else:

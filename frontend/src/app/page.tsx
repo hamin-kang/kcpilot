@@ -210,7 +210,7 @@ function ResultView({ result }: { result: AssessmentResult }) {
 
       {result.needs_expert_review && (
         <div className="rounded border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-700">
-          ⚠ 전문가 상담 권장 — 신뢰도가 낮은 인증이 포함되어 있습니다.
+          ⚠ 전문가 상담 권장 — 동일 축에서 인증등급이 경합하거나 신뢰도가 낮은 인증이 있습니다. 최종 판단은 공식 기관에 확인하세요.
         </div>
       )}
 

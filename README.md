@@ -58,9 +58,9 @@ AI 진단은 LangGraph 기반 멀티스텝 워크플로우로 동작한다.
 ```mermaid
 flowchart TB
     A[제품 정보 입력] --> B[카테고리 분류]
-    B --> C[적용 인증 식별]
-    C --> D[시험 항목 추출]
-    D --> E[시험기관 추천]
+    B --> C[법령 검색]
+    C --> D[품목 분류표 매칭]
+    D --> E[인증 진단]
     E --> F[유사 리콜 검색]
     F --> G[자기비판 검증]
     G --> H[진단 리포트]
@@ -81,7 +81,7 @@ flowchart TB
 |------|------|
 | **Frontend** | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS |
 | **Backend** | Spring Boot 3.5 (Java 21), JPA, Spring Security + JWT |
-| **AI** | FastAPI (Python 3.11), LangChain / LangGraph, Google Gemini |
+| **AI** | FastAPI (Python 3.11), LangChain / LangGraph, Vertex AI (Gemini) |
 | **Data** | PostgreSQL 18 + pgvector (RAG 임베딩 검색) |
 | **Infra** | Docker Compose |
 
@@ -155,11 +155,12 @@ cd ai-service && uv run pytest      # ai-service
 
 ## 📍 현재 상태
 
-**Walking skeleton 동작** — frontend → backend → ai-service → pgvector를 관통하는 진단 흐름이 end-to-end로 동작한다. 대표 시나리오(헤어드라이어 220V·1200W·가정용)가 입력부터 결과까지 검증됐다: **안전인증 + 전자파 적합등록 동시 식별**, 시험항목·시험기관(KTL 등) 추천, 유사 리콜 3건 (위 시연 참고).
+법령 전수 데이터 기반 진단이 동작한다. KC 안전관리법·어린이제품법·전자파 고시 전 조문과 분류 별표(총 1,165건)가 pgvector에 적재되어 있고, 품목 분류표의 인증등급은 LLM이 법령 본문에서 읽는 게 아니라 구조화된 metadata에서 직접 가져온다.
 
-다음 단계 — 의도적으로 범위에서 제외한 후속 작업:
+대표 시나리오(헤어드라이어 220V·1200W·가정용) 검증 결과: **안전인증 + 전자파 적합등록 동시 식별**, 시험항목·시험기관(KTL 등) 추천, 유사 리콜 3건. "가정용 미용기기(안전확인)"와 "모발관리기(안전인증)"가 유사도 0.01 차이로 붙어 모호성 플래그 정상 발동 — 단정 대신 전문가 검토 유도.
 
-- 시나리오 확장 (어린이 전자완구·산업용 IoT 등)
+남은 작업:
+
 - 리콜 데이터 실 API 연동 (현재 샘플 데이터)
 - 신뢰도 임계값 정답셋 보정 ([requirements.md](docs/requirements.md) §4.2.1 — Phase 3)
 - 운영용 인증·인가 설계 (현재 개발용 permitAll)
