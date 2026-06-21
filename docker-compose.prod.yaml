@@ -31,6 +31,7 @@ services:
       ADMIN_NAME: ${ADMIN_NAME}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       AI_SERVICE_BASE_URL: http://ai-service:8000
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
     depends_on:
       postgres:
         condition: service_healthy
@@ -58,7 +59,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE}
+      BACKEND_URL: http://backend:8080
 
 volumes:
   postgres-data:

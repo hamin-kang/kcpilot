@@ -7,8 +7,6 @@ import type {
   Certification,
 } from "@/app/types";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8080";
 
 const HAIRDRYER: AssessmentRequest = {
   product_name: "헤어드라이어",
@@ -36,7 +34,7 @@ export default function Home() {
     setError(null);
     setResult(null);
     try {
-      const res = await fetch(`${API_BASE}/api/assessments`, {
+      const res = await fetch(`/api/assessments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
