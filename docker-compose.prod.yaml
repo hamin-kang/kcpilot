@@ -1,0 +1,63 @@
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.2-pg18
+    container_name: kcpilot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: ${REGISTRY}/kcpilot-backend:${IMAGE_TAG:-latest}
+    container_name: kcpilot-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      ADMIN_NAME: ${ADMIN_NAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      AI_SERVICE_BASE_URL: http://ai-service:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  ai-service:
+    image: ${REGISTRY}/kcpilot-ai-service:${IMAGE_TAG:-latest}
+    container_name: kcpilot-ai-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      GCP_PROJECT: ${GCP_PROJECT}
+      GCP_LOCATION: ${GCP_LOCATION:-us-central1}
+    volumes:
+      - gcp-credentials:/root/.config/gcloud
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    image: ${REGISTRY}/kcpilot-frontend:${IMAGE_TAG:-latest}
+    container_name: kcpilot-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+
+volumes:
+  postgres-data:
+  gcp-credentials:
