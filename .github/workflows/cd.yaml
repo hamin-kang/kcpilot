@@ -34,21 +34,27 @@ jobs:
         with:
           context: ./backend
           push: true
-          tags: ${{ env.REGISTRY }}/kcpilot-backend:${{ env.IMAGE_TAG }}
+          tags: |
+            ${{ env.REGISTRY }}/kcpilot-backend:${{ env.IMAGE_TAG }}
+            ${{ env.REGISTRY }}/kcpilot-backend:latest
 
       - name: frontend 이미지 빌드·푸시
         uses: docker/build-push-action@v6
         with:
           context: ./frontend
           push: true
-          tags: ${{ env.REGISTRY }}/kcpilot-frontend:${{ env.IMAGE_TAG }}
+          tags: |
+            ${{ env.REGISTRY }}/kcpilot-frontend:${{ env.IMAGE_TAG }}
+            ${{ env.REGISTRY }}/kcpilot-frontend:latest
 
       - name: ai-service 이미지 빌드·푸시
         uses: docker/build-push-action@v6
         with:
           context: ./ai-service
           push: true
-          tags: ${{ env.REGISTRY }}/kcpilot-ai-service:${{ env.IMAGE_TAG }}
+          tags: |
+            ${{ env.REGISTRY }}/kcpilot-ai-service:${{ env.IMAGE_TAG }}
+            ${{ env.REGISTRY }}/kcpilot-ai-service:latest
 
   deploy:
     runs-on: ubuntu-24.04
