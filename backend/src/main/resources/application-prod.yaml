@@ -1,0 +1,23 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+    show-sql: false
+
+  security:
+    user:
+      name: ${ADMIN_NAME}
+      password: ${ADMIN_PASSWORD}
+
+logging:
+  level:
+    com.kcpilot: INFO
+    org.hibernate.SQL: WARN
