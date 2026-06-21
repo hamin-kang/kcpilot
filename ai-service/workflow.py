@@ -235,6 +235,7 @@ def match_items_node(state: AssessmentState) -> dict:
             "category": m.get("category"),
             "law": m.get("law", "(미상)"),
             "article": m.get("article", ""),
+            "body": m.get("body", ""),
             "similarity": round(cosine_distance_to_similarity(distance), 3),
         })
 
@@ -261,15 +262,31 @@ def _format_law_context(hits: list[dict]) -> str:
 
 
 def _format_item_context(item_hits: list[dict]) -> str:
-    """신뢰 바닥을 넘긴 품목 매칭만 권위 있는 인증등급 출처로 제시한다."""
+    """축(안전/전자파)별로 유사도 최고 항목 1개씩만 진단 컨텍스트로 넘긴다.
+
+    LLM에게 여러 후보 중 하나를 고르도록 맡기면 인퍼런스마다 결과가 달라진다.
+    대신 순위 결정을 여기서 끝내고, LLM은 주어진 항목을 권위값으로 쓰기만 한다.
+    모호성(같은 축에서 cert_level이 다른 항목이 근접)은 _is_item_ambiguous가 별도 처리.
+    """
     strong = [h for h in item_hits if h["similarity"] >= settings.ITEM_MATCH_FLOOR]
     if not strong:
         return "(신뢰할 만한 품목 매칭 없음 — 아래 법령 본문으로만 판단하라)"
-    return "\n".join(
-        f"- {h['item_name']} → {h['axis']}축 / {h['cert_level']} / {h['category']} "
-        f"[{h['law']} {h['article']}] (매칭도 {h['similarity']})"
-        for h in strong
-    )
+
+    best_by_axis: dict[str, dict] = {}
+    for h in sorted(strong, key=lambda x: x["similarity"], reverse=True):
+        if h.get("axis") and h["axis"] not in best_by_axis:
+            best_by_axis[h["axis"]] = h
+
+    lines = []
+    for h in best_by_axis.values():
+        line = (
+            f"- {h['item_name']} → {h['axis']}축 / {h['cert_level']} / {h['category']} "
+            f"[{h['law']} {h['article']}] (매칭도 {h['similarity']})"
+        )
+        if h.get("body"):
+            line += f"\n  적용조건: {h['body'][:200]}"
+        lines.append(line)
+    return "\n".join(lines)
 
 
 def diagnose_node(state: AssessmentState) -> dict:
@@ -283,8 +300,11 @@ def diagnose_node(state: AssessmentState) -> dict:
         "1) [품목 분류표 매칭] — 공식 별표에서 제품명으로 찾은 결과. cert_level의 권위 있는 출처다.\n"
         "2) [근거 법령] — 인증의 이유·절차·시험항목을 설명하는 조문.\n\n"
         "중요 규칙:\n"
-        "- 품목 분류표 매칭에 나온 인증은 반드시 포함하고, type(인증등급)은 거기 적힌 값을 그대로 써라. "
+        "- 한 제품은 축(안전/전자파)당 인증등급이 하나다. 같은 축의 매칭 항목이 여러 개라면 "
+        "① 적용조건이 제품 설명과 맞는 항목, ② 그 중 매칭도(유사도)가 높은 항목 순으로 "
+        "하나만 선택하라. 매칭도가 높다는 것은 제품명이 해당 품목에 더 가깝다는 의미다. "
         "법령 본문을 보고 인증등급을 새로 추론하지 마라.\n"
+        "- 조건 자체가 모호해 판단이 불가능한 경우에만 복수를 포함하되, reason에 이유를 명시하라.\n"
         "- 한 제품이 안전 축과 전자파 축에 동시에 걸릴 수 있다. 둘 다 매칭되면 둘 다 식별하라.\n"
         "- 분류표 매칭이 없는 인증을 본문 근거로 추가할 수는 있으나, 그때는 reason에 "
         "'분류표 미확인'이라고 한계를 명시하라.\n"
@@ -443,10 +463,10 @@ def _assemble(state: AssessmentState) -> AssessmentResult:
 
         # --- 신뢰도 산출 (Phase 1 + 품목 앵커링) ---
         if item:
-            # 공식 분류표에 등재된 인증 → 등급 자체는 권위 있게 확정됨. 최소 MEDIUM을
-            # 보장하고, 그 위로는 충실성(llm_score)이 끌어올린다. 등급 모호성은 별도
-            # needs_expert 플래그가 처리한다.
-            confidence_score = round(max(llm_score, settings.MEDIUM_THRESHOLD), 3)
+            # 공식 분류표에 등재된 인증 → cert_level 자체가 법령 데이터의 권위값.
+            # LLM 추론 변동(0.80 vs 0.85)에 흔들리지 않도록 HIGH_THRESHOLD를 floor로
+            # 보장한다. 품목 모호성(같은 축에서 등급 경쟁)은 needs_expert 플래그가 처리.
+            confidence_score = round(max(llm_score, settings.HIGH_THRESHOLD), 3)
         elif not refs:
             # 분류표 매칭도 인용 근거도 없음 → 뒷받침 전무
             confidence_score = 0.0
