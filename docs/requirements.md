@@ -300,8 +300,8 @@ KATS는 시험기관이 아니라 제도 관리 기관(정부).
 - ORM: JPA (Hibernate)
 - DB: PostgreSQL 18 (pgvector 0.8.2 확장 포함)
 - API 문서: springdoc-openapi 2.8 (Swagger UI 자동 생성)
-- 인증: Spring Security + JWT
-- 배포: Docker
+- 인증: Spring Security (현재 permitAll, JWT 로그인은 [F-01] 계획)
+- 배포: Docker / Docker Compose (GCP Compute Engine)
 
 ### 5.2 AI 서비스
 
@@ -325,6 +325,10 @@ KATS는 시험기관이 아니라 제도 관리 기관(정부).
 ### 5.4 인프라
 
 - DB: PostgreSQL 18 + pgvector 0.8.2 (Docker, 이미지 `pgvector/pgvector:0.8.2-pg18`)
+- 컨테이너: Docker / Docker Compose (네 서비스 — frontend·backend·ai-service·PostgreSQL)
+- 배포: GCP Compute Engine (e2-standard-2, asia-northeast3) + Docker Compose
+- CI/CD: GitHub Actions — PR 시 CI(빌드·테스트), `main` push 시 CD(이미지 빌드 → Artifact Registry → VM SSH 배포)
+- GCP 인증: GitHub Actions는 Workload Identity Federation(키 파일 없음), ai-service는 VM 서비스 계정 ADC
 - 버전 관리: Git, GitHub (Public 레포)
 - 개발 환경: Ubuntu-24.04 + Docker
 

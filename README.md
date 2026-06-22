@@ -2,6 +2,8 @@
 
 > **KC 인증 사전진단 AI 서비스** — 제품 정보를 자연어로 입력하면 *어떤 KC 인증이 필요한지* 30초 안에 법령 근거와 함께 리포트로 정리해준다.
 
+**▶ 라이브 데모: <http://34.22.88.255:3000>** _(GCP Compute Engine 배포 · `main` push 시 GitHub Actions로 자동 배포)_
+
 > 🎥 **데모**
 
 ![KCpilot 시연 — 헤어드라이어 진단](docs/demo.gif)
@@ -80,10 +82,30 @@ flowchart TB
 | 영역 | 기술 |
 |------|------|
 | **Frontend** | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS |
-| **Backend** | Spring Boot 3.5 (Java 21), JPA, Spring Security + JWT |
+| **Backend** | Spring Boot 3.5 (Java 21), JPA, Spring Security |
 | **AI** | FastAPI (Python 3.11), LangChain / LangGraph, Vertex AI (Gemini) |
 | **Data** | PostgreSQL 18 + pgvector (RAG 임베딩 검색) |
-| **Infra** | Docker Compose |
+| **Infra** | GCP Compute Engine, Docker / Docker Compose, GitHub Actions (CI·CD), Artifact Registry |
+
+## ☁️ 배포 & CI/CD
+
+GCP Compute Engine VM 한 대 위에 네 컨테이너(frontend·backend·ai-service·PostgreSQL)를 Docker Compose로 띄운다. `main` 브랜치에 push하면 배포까지 자동으로 이어진다.
+
+```mermaid
+flowchart LR
+    P[main push] --> CI[GitHub Actions]
+    CI -->|이미지 빌드| AR[(Artifact Registry)]
+    CI -->|SSH 배포| VM[Compute Engine VM]
+    AR -->|pull| VM
+    VM --> C[Docker Compose<br/>FE · BE · AI · pgvector]
+```
+
+- **CI** — PR 시 backend(`gradlew build`) · frontend(`build`/`lint`/`test`) · ai-service(`pytest`) 검증 ([ci.yaml](.github/workflows/ci.yaml))
+- **CD** — `main` push 시 세 서비스 이미지를 빌드해 Artifact Registry에 푸시하고, VM에 SSH로 접속해 `docker compose pull && up -d` 실행 ([cd.yaml](.github/workflows/cd.yaml))
+- **인증** — GitHub Actions → GCP는 **Workload Identity Federation**으로 키 파일 없이 인증. ai-service의 Vertex AI 호출은 VM 서비스 계정(ADC)으로 처리 — 코드·저장소 어디에도 GCP 키가 없다
+- **프록시 구조** — 브라우저는 `/api/*` 상대경로로 Next.js 서버에 요청하고, Next 서버가 Docker 내부 네트워크로 backend에 포워딩한다. `NEXT_PUBLIC_*` 빌드타임 고정 문제를 피하고 외부에 노출되는 호스트를 없앴다
+
+> 인프라 구축 전 과정은 [docs/gcp-setup.md](docs/gcp-setup.md)에 단계별로 정리되어 있다.
 
 ## 🚀 로컬 실행
 
