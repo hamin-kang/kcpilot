@@ -138,8 +138,8 @@ def load_documents() -> tuple[list[Document], list[Document]]:
     return legal_docs, item_docs
 
 
-def load_recall_documents() -> list[Document]:
-    raw = json.loads((DATA_DIR / "recalls.json").read_text(encoding="utf-8"))
+def load_recall_documents(path: Path) -> list[Document]:
+    raw = json.loads(path.read_text(encoding="utf-8"))
     docs: list[Document] = []
     for item in raw:
         # 검색 대상 텍스트는 제목+사유를 합친다.
@@ -172,12 +172,13 @@ def main() -> None:
     ingest(settings.LAW_COLLECTION, legal_docs)
     ingest(settings.ITEM_COLLECTION, item_docs)
 
-    if (DATA_DIR / "recalls.json").exists():
+    recall_file = DATA_DIR / "raw" / "recalls" / "recalls.json"
+    if recall_file.exists():
         print("리콜 사례 적재 중...")
-        recall_docs = load_recall_documents()
+        recall_docs = load_recall_documents(recall_file)
         ingest(settings.RECALL_COLLECTION, recall_docs)
     else:
-        print("리콜 데이터 없음(data/recalls.json 미존재) — 건너뜀")
+        print("리콜 데이터 없음(data/raw/recalls/recalls.json 미존재) — 건너뜀")
 
     print("\n완료. 검색 테스트는 `uv run python -c \"from workflow import run_assessment; ...\"` 또는 /docs 에서.")
 
